@@ -1,0 +1,1122 @@
+# Collaborative IDE
+
+## 1. Project Overview
+
+**Project Name:** Collaborative IDE
+**Project Type:** Real-time Collaborative Development Environment
+**Category:** Developer Tools / Web IDE / Distributed Systems
+**Status:** Idea
+**Difficulty:** Advanced
+**Target Users:** Software developers, students, development teams, mentors, hackathon teams
+
+### One-Line Description
+
+A browser-based collaborative IDE that allows two or more developers to open the same project and **simultaneously edit, run, debug, and discuss the same codebase in real time**.
+
+### Core Idea
+
+The platform works similarly to VS Code, but collaboration is a first-class feature.
+
+Instead of sending files through WhatsApp, Git, or screen sharing, developers can join the same workspace and work on the same codebase simultaneously.
+
+Example:
+
+```text
+                 Collaborative Workspace
+                         │
+          ┌──────────────┼──────────────┐
+          │              │              │
+       Developer A    Developer B    Developer C
+          │              │              │
+          ▼              ▼              ▼
+       Editing         Editing        Reviewing
+       server.js       auth.js        UI.jsx
+          │              │              │
+          └──────────────┼──────────────┘
+                         ▼
+                  Shared Project State
+                         │
+              ┌──────────┼──────────┐
+              ▼          ▼          ▼
+           Terminal    Preview     Git
+```
+
+---
+
+# 2. Problem Statement
+
+Modern development collaboration usually requires several separate tools.
+
+A team might use:
+
+* VS Code for development
+* GitHub for code sharing
+* Discord/Slack for communication
+* Zoom/Meet for screen sharing
+* Google Docs for documentation
+
+This creates friction when developers want to work on the **same code at the same time**.
+
+For example, during pair programming:
+
+```text
+Developer A → shares screen
+Developer B → explains changes
+Developer A → writes code
+Developer B → waits
+```
+
+The goal of this project is to make the coding environment itself collaborative.
+
+---
+
+# 3. Proposed Solution
+
+Create a web-based IDE where users can:
+
+1. Create a project/workspace.
+2. Invite other developers.
+3. Open the same files simultaneously.
+4. See other developers' cursors.
+5. See who is editing which part of a file.
+6. Make simultaneous edits without overwriting each other.
+7. Run the project.
+8. Access a shared terminal.
+9. View the application preview.
+10. Communicate through chat.
+11. Track changes.
+12. Optionally integrate Git/GitHub.
+
+The key technical challenge is **real-time synchronization of code changes**.
+
+---
+
+# 4. Main Features
+
+## 4.1 Authentication
+
+Users can:
+
+* Register
+* Login
+* Logout
+* Reset password
+* Manage profile
+* View their workspaces
+
+Possible authentication:
+
+```text
+Email + Password
+       │
+       ▼
+JWT Access Token
+       │
+       ▼
+Refresh Token
+```
+
+---
+
+# 5. Workspace System
+
+A workspace represents a collaborative development environment.
+
+Example:
+
+```text
+Workspace
+│
+├── Members
+│   ├── Arpit
+│   ├── Rahul
+│   └── Aman
+│
+├── Project Files
+│   ├── package.json
+│   ├── src/
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   └── server/
+│       └── index.js
+│
+├── Terminal
+├── Preview
+├── Chat
+└── Git
+```
+
+### Workspace Operations
+
+Users can:
+
+* Create workspace
+* Rename workspace
+* Delete workspace
+* Invite members
+* Remove members
+* Change member permissions
+* Leave workspace
+
+---
+
+# 6. Real-Time Code Collaboration
+
+This is the **core feature** of the project.
+
+Multiple users should be able to edit the same file simultaneously.
+
+Example:
+
+```text
+                    App.jsx
+
+Developer A
+       │
+       ├── types: "const user = ..."
+       │
+       ▼
+┌───────────────────────────────┐
+│        Collaboration          │
+│           Server              │
+└───────────────┬───────────────┘
+                │
+       synchronized state
+                │
+        ┌───────┴────────┐
+        ▼                ▼
+ Developer B        Developer C
+```
+
+### Requirements
+
+The system should support:
+
+* Real-time text changes
+* Cursor positions
+* Selection ranges
+* User presence
+* File opening status
+* Multiple simultaneous editors
+* Conflict resolution
+* Reconnection
+* Offline/reconnect synchronization
+
+---
+
+# 7. Conflict Resolution
+
+This is one of the most important technical problems.
+
+Suppose:
+
+```text
+Initial:
+
+const name = "Arpit";
+```
+
+Developer A changes:
+
+```text
+const name = "Rahul";
+```
+
+At almost the same time Developer B changes:
+
+```text
+const name = "Aman";
+```
+
+The system must prevent one user's changes from simply overwriting another user's changes.
+
+Possible technologies:
+
+### Option A — Operational Transformation (OT)
+
+Transform concurrent operations before applying them.
+
+```text
+Operation A
+     │
+     ▼
+Transform
+     ▲
+     │
+Operation B
+```
+
+### Option B — CRDT
+
+Represent the document as a conflict-free replicated data structure.
+
+The project can initially use an existing CRDT implementation and later explore implementing parts of synchronization independently.
+
+---
+
+# 8. Communication Layer
+
+The real-time layer can use:
+
+* WebSockets
+* Socket.IO
+* WebRTC where appropriate
+
+Example:
+
+```text
+Client A
+   │
+   │ WebSocket
+   ▼
+Collaboration Server
+   │
+   ├── document updates
+   ├── cursor updates
+   ├── presence
+   ├── terminal events
+   └── chat messages
+   │
+   ▼
+Client B
+```
+
+---
+
+# 9. Presence System
+
+Users should be able to see who is currently online.
+
+Example:
+
+```text
+ONLINE
+
+🟢 Arpit
+   editing App.jsx
+
+🟢 Rahul
+   editing server.js
+
+🟡 Aman
+   idle
+```
+
+Presence information:
+
+```yaml
+user:
+  id:
+  name:
+  avatar:
+  status: online
+  current_file:
+  cursor_position:
+  last_activity:
+```
+
+---
+
+# 10. Code Editor
+
+The application should provide a VS Code-like editor.
+
+Potential editor technologies:
+
+* Monaco Editor
+* CodeMirror
+
+Editor capabilities:
+
+* Syntax highlighting
+* Auto-completion
+* Multiple tabs
+* Search
+* Replace
+* File navigation
+* Keyboard shortcuts
+* Themes
+* Minimap
+* Error highlighting
+
+Example UI:
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│ File   Edit   View   Terminal                           │
+├─────────────┬───────────────────────────────┬───────────┤
+│             │                               │           │
+│ Explorer    │          Editor               │ AI /      │
+│             │                               │ Chat      │
+│ src/        │  1  import React             │           │
+│ ├ App.jsx   │  2                            │ Arpit     │
+│ ├ main.jsx  │  3  function App() {         │ Rahul     │
+│ └ api.js    │  4     return (...)          │ Aman      │
+│             │  5  }                        │           │
+│             │                               │           │
+├─────────────┴───────────────────────────────┴───────────┤
+│ Terminal                                                 │
+│ $ npm run dev                                            │
+│ Server running on port 3000                              │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+# 11. Shared Terminal
+
+Users should be able to execute project commands.
+
+Examples:
+
+```bash
+npm install
+npm run dev
+npm test
+git status
+```
+
+However, terminal execution must happen in an **isolated environment**.
+
+Never execute arbitrary user commands directly on the main application server.
+
+Recommended architecture:
+
+```text
+User
+ │
+ ▼
+API Server
+ │
+ ▼
+Job / Execution Service
+ │
+ ▼
+Isolated Container
+ │
+ ├── CPU limit
+ ├── Memory limit
+ ├── Network policy
+ └── Time limit
+```
+
+Each workspace can receive its own isolated development environment.
+
+---
+
+# 12. Live Preview
+
+For web projects, users should be able to see the running application.
+
+Example:
+
+```text
+┌───────────────────────────────┐
+│        Application Preview    │
+├───────────────────────────────┤
+│                               │
+│        My React App           │
+│                               │
+│        [ Login ]              │
+│                               │
+└───────────────────────────────┘
+```
+
+Possible architecture:
+
+```text
+Code
+ │
+ ▼
+Container
+ │
+ ▼
+Development Server
+ │
+ ▼
+Reverse Proxy
+ │
+ ▼
+Temporary Preview URL
+```
+
+---
+
+# 13. Chat
+
+Every workspace can have a small real-time chat.
+
+Features:
+
+* Messages
+* Mentions
+* File references
+* Code snippets
+* Message timestamps
+* Online status
+
+Example:
+
+```text
+Rahul:
+I fixed the authentication bug.
+
+Arpit:
+Which file?
+
+Rahul:
+@Arpit src/auth/login.js
+
+Aman:
+I'll review it.
+```
+
+---
+
+# 14. Code Awareness
+
+A major differentiating feature can be making collaboration visible inside the editor.
+
+Example:
+
+```text
+App.jsx
+
+1  import React from "react";
+2
+3  function App() {
+4
+5  █ Rahul is editing this line
+6
+7      return <Dashboard />;
+8  }
+```
+
+Users could see:
+
+* Other developers' cursors
+* Selection areas
+* User names
+* File activity
+* Recently modified lines
+
+---
+
+# 15. Permissions
+
+Different workspace roles:
+
+```text
+OWNER
+  │
+  ├── manage workspace
+  ├── manage members
+  ├── delete workspace
+  └── full code access
+       
+ADMIN
+  │
+  ├── manage members
+  └── manage project
+
+DEVELOPER
+  │
+  ├── edit code
+  ├── run project
+  └── use terminal
+
+VIEWER
+  │
+  └── read-only access
+```
+
+---
+
+# 16. Git Integration
+
+Optional initial Git functionality:
+
+```text
+Workspace
+    │
+    ▼
+Git Repository
+    │
+    ├── status
+    ├── diff
+    ├── commit
+    ├── branch
+    └── push/pull
+```
+
+Future GitHub integration:
+
+```text
+GitHub
+   │
+   ▼
+Import Repository
+   │
+   ▼
+Collaborative Workspace
+```
+
+---
+
+# 17. Architecture
+
+## High-Level Architecture
+
+```text
+                    ┌───────────────────┐
+                    │     Frontend      │
+                    │ React / Next.js   │
+                    └─────────┬─────────┘
+                              │
+                    HTTPS / WebSocket
+                              │
+             ┌────────────────┴────────────────┐
+             │                                 │
+             ▼                                 ▼
+      ┌──────────────┐                  ┌──────────────┐
+      │ API Server   │                  │ Collaboration│
+      │              │                  │ Server       │
+      └──────┬───────┘                  └──────┬───────┘
+             │                                 │
+             ├──────────────┐          ┌───────┴───────┐
+             │              │          │               │
+             ▼              ▼          ▼               ▼
+       PostgreSQL         Redis    Document State   Presence
+             │
+             ▼
+       User/Workspace
+          Metadata
+
+             API Server
+                  │
+                  ▼
+          Execution Service
+                  │
+                  ▼
+             Containers
+                  │
+                  ▼
+            Live Preview
+```
+
+---
+
+# 18. Suggested Technology Stack
+
+## Frontend
+
+```text
+Next.js / React
+TypeScript
+Monaco Editor
+Tailwind CSS
+Zustand / Redux Toolkit
+WebSocket / Socket.IO client
+```
+
+## Backend
+
+```text
+Node.js
+Express / Fastify
+TypeScript
+WebSocket / Socket.IO
+```
+
+## Database
+
+```text
+PostgreSQL
+```
+
+Store:
+
+* Users
+* Workspaces
+* Workspace members
+* Projects
+* Files metadata
+* Permissions
+* Chat history
+* Git metadata
+
+---
+
+# 19. Real-Time Infrastructure
+
+```text
+WebSocket
+Redis
+CRDT / OT
+```
+
+Redis can be used for:
+
+* Presence
+* Pub/Sub
+* Distributed WebSocket coordination
+* Temporary workspace state
+* Rate limiting
+
+---
+
+# 20. Execution Infrastructure
+
+```text
+Docker
+        │
+        ▼
+Execution Worker
+        │
+        ▼
+Isolated Container
+```
+
+Each execution should have:
+
+```text
+CPU limit
+Memory limit
+Execution timeout
+Filesystem isolation
+Network restrictions
+Process limits
+```
+
+This becomes an important security component.
+
+---
+
+# 21. Database Design
+
+Potential tables:
+
+```text
+users
+─────
+id
+name
+email
+password_hash
+created_at
+
+workspaces
+──────────
+id
+name
+owner_id
+created_at
+
+workspace_members
+─────────────────
+workspace_id
+user_id
+role
+joined_at
+
+projects
+────────
+id
+workspace_id
+name
+repository_url
+
+files
+─────
+id
+project_id
+path
+language
+created_at
+updated_at
+
+chat_messages
+─────────────
+id
+workspace_id
+user_id
+message
+created_at
+
+sessions
+─────────
+id
+workspace_id
+user_id
+connected_at
+disconnected_at
+```
+
+The actual document contents can be handled separately from relational metadata depending on the synchronization architecture.
+
+---
+
+# 22. Core Real-Time Data Model
+
+A collaboration session could conceptually maintain:
+
+```yaml
+session:
+  workspace_id:
+  connected_users:
+
+    - user_id:
+      current_file:
+      cursor:
+      selection:
+      status:
+
+  documents:
+
+    App.jsx:
+      version:
+      state:
+
+    server.js:
+      version:
+      state:
+```
+
+---
+
+# 23. Important Engineering Challenges
+
+This project is primarily interesting because of its engineering challenges.
+
+### Challenge 1 — Concurrent editing
+
+How do multiple users modify one document without losing changes?
+
+### Challenge 2 — Network latency
+
+What happens when:
+
+```text
+User A → edit
+        ↓
+     Network
+        ↓
+     Server
+        ↓
+     User B
+```
+
+takes 100–300 ms?
+
+### Challenge 3 — Reconnection
+
+A developer loses internet for 10 seconds.
+
+When they reconnect:
+
+```text
+Local state
+     +
+Server state
+     ↓
+Synchronization
+```
+
+must occur safely.
+
+### Challenge 4 — Scaling
+
+If:
+
+```text
+Workspace A → 5 users
+Workspace B → 20 users
+Workspace C → 100 users
+```
+
+the collaboration layer must handle many simultaneous sessions.
+
+### Challenge 5 — Secure code execution
+
+Running arbitrary code inside a cloud service is dangerous.
+
+The execution layer needs strong isolation.
+
+---
+
+# 24. MVP
+
+Do **not** build everything initially.
+
+### Phase 1 — Basic IDE
+
+Build:
+
+```text
+Login
+  ↓
+Workspace
+  ↓
+File Explorer
+  ↓
+Monaco Editor
+  ↓
+Save Files
+```
+
+### Phase 2 — Collaboration
+
+Add:
+
+```text
+WebSocket
+   ↓
+Shared document
+   ↓
+Multiple users
+   ↓
+Cursor presence
+```
+
+### Phase 3 — Workspace
+
+Add:
+
+```text
+Members
+Roles
+Permissions
+Chat
+```
+
+### Phase 4 — Execution
+
+Add:
+
+```text
+Docker
+   ↓
+Code execution
+   ↓
+Terminal
+   ↓
+Preview
+```
+
+### Phase 5 — Git
+
+Add:
+
+```text
+Git status
+Commit
+Branch
+Push
+Pull
+GitHub import
+```
+
+---
+
+# 25. Future Features
+
+Possible advanced features:
+
+* Voice/video calls
+* Screen sharing
+* AI coding assistant
+* AI code review
+* Shared debugging
+* Breakpoint synchronization
+* Collaborative Git conflict resolution
+* Session recording
+* Code playback
+* Project activity timeline
+* Pair-programming mode
+* Interview mode
+* Classroom mode
+* Hackathon workspace
+* Temporary public workspace
+* Plugin system
+* VS Code extension
+* Desktop application
+
+---
+
+# 26. Unique Extensions
+
+### Collaborative Debugger
+
+Two developers can debug the same application simultaneously.
+
+```text
+Developer A
+     │
+     ▼
+Breakpoint
+     │
+     ▼
+Shared Debug Session
+     │
+     ├── Variables
+     ├── Call Stack
+     └── Execution State
+     │
+     ▼
+Developer B
+```
+
+### Code Playback
+
+Record document operations and replay how the code evolved.
+
+```text
+10:00 ─ Initial code
+10:05 ─ Function added
+10:12 ─ Bug introduced
+10:18 ─ Bug fixed
+10:25 ─ Feature completed
+```
+
+### Collaborative AI Mentor
+
+AI can understand the shared workspace and answer:
+
+> "Why is this API returning 401?"
+
+The AI sees the relevant code and project context rather than only a pasted snippet.
+
+---
+
+# 27. Success Criteria
+
+The MVP is successful when:
+
+* Two users can enter the same workspace.
+* Both can open the same file.
+* Both can edit simultaneously.
+* Changes appear in real time.
+* Concurrent edits don't unnecessarily overwrite each other.
+* User cursors/presence are visible.
+* Users can create and manage files.
+* Users can run a supported project safely.
+* Users can see the application preview.
+
+---
+
+# 28. Learning Objectives
+
+This project can demonstrate knowledge of:
+
+### Frontend
+
+* React/Next.js
+* Monaco Editor
+* WebSocket clients
+* State management
+* Real-time UI
+
+### Backend
+
+* REST APIs
+* WebSockets
+* Authentication
+* Authorization
+* Event-driven architecture
+
+### Distributed Systems
+
+* Concurrency
+* Conflict resolution
+* CRDT/OT
+* Event ordering
+* Consistency
+* Presence
+* Reconnection
+* Horizontal scaling
+
+### Infrastructure
+
+* Docker
+* Redis
+* Reverse proxy
+* Container isolation
+* Process management
+
+### Database
+
+* PostgreSQL
+* Transactions
+* Relational modeling
+* Workspace/member relationships
+
+---
+
+# 29. Difficulty
+
+**Overall:** Advanced
+
+The basic IDE is not particularly unusual.
+
+The challenging part is:
+
+```text
+             Real-time Collaboration
+                       +
+              Concurrent Editing
+                       +
+                Distributed State
+                       +
+                Code Execution
+```
+
+That combination makes the project substantially more technically interesting.
+
+---
+
+# 30. Final Project Vision
+
+The long-term vision is:
+
+```text
+                         COLLABORATIVE IDE
+
+ ┌──────────────────────────────────────────────────────────┐
+ │ Files        Editor                    Collaboration     │
+ │                                                          │
+ │ src/         App.jsx                   🟢 Arpit          │
+ │ ├ App.jsx    ─────────────────         🟢 Rahul          │
+ │ ├ api.js     │ const App = () =>       🟡 Aman           │
+ │ └ auth.js    │   <Dashboard />                           │
+ │              └────────────────                          │
+ │                                                          │
+ ├──────────────────────────────────────────────────────────┤
+ │ Terminal                         Chat                    │
+ │ $ npm run dev                    Rahul: fixed auth      │
+ │ Server running                   Arpit: checking it     │
+ ├──────────────────────────────────────────────────────────┤
+ │                    LIVE PREVIEW                          │
+ │                    localhost                             │
+ └──────────────────────────────────────────────────────────┘
+```
+
+The ultimate goal is to create a **shared development environment**, not merely a code editor with a multiplayer cursor.
+
+---
+
+# 31. Project Tag
+
+```yaml
+tags:
+  - collaborative-ide
+  - real-time
+  - websocket
+  - distributed-systems
+  - crdt
+  - code-editor
+  - docker
+  - redis
+  - postgres
+  - developer-tools
+  - web-ide
+```
