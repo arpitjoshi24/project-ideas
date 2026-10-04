@@ -1,0 +1,365 @@
+# =====================================================================
+#  HUNTIO  (working name) - Real-world scavenger hunt, Skribbl-style
+#  Players join a room with a Room ID, turn on camera + mic, get a
+#  prompt ("find a brush"), run and find it, show it on camera, the AI
+#  detects it and awards points. Leaderboard like Skribbl.
+# =====================================================================
+
+game:
+  name: Huntio
+  tagline: "Find it. Show it. Win it."
+  version: 0.1.0
+  type: realtime_multiplayer_party_game
+  platforms: [web, android, ios]
+  min_players: 2
+  max_players: 12
+
+# ---------------------------------------------------------------------
+# TECH STACK
+# ---------------------------------------------------------------------
+tech_stack:
+  frontend:
+    framework: React (web) / React Native or Flutter (mobile)
+    realtime_client: socket.io-client
+    video: WebRTC (getUserMedia for camera + mic)
+  backend:
+    runtime: Node.js
+    framework: Express + Socket.IO
+    cache_state: Redis            # room state, leaderboard (sorted sets)
+    database: PostgreSQL          # users, history, items, stats
+  media:
+    webrtc_topology: SFU          # use SFU for 6+ players, mesh is too heavy
+    sfu_options: [LiveKit, mediasoup, Janus]
+    turn_stun: coturn
+  ai_detection:
+    primary_on_device:
+      model: YOLOv8n / YOLO11n (TensorFlow.js or ONNX Runtime Web)
+      note: "Runs in the player's browser, fast, free, privacy friendly"
+    fallback_server:
+      model: CLIP zero-shot or a vision LLM API
+      note: "For items not in COCO classes (brush, pen, spoon, etc.)"
+    vocabulary: "COCO has only 80 classes; use CLIP/open-vocab (YOLO-World, OWL-ViT) for the rest"
+  hosting: [Docker, AWS/GCP/Fly.io, Cloudflare for CDN]
+
+# ---------------------------------------------------------------------
+# ROOMS
+# ---------------------------------------------------------------------
+room:
+  id:
+    format: "6 chars, uppercase alphanumeric, no confusing chars (0/O, 1/I)"
+    example: "K7P2XQ"
+    ttl_minutes_when_empty: 10
+  join:
+    methods: [room_id, invite_link, qr_code]
+    require_nickname: true
+    guest_login: true
+    optional_login: [google, email]
+  roles:
+    host:
+      can: [start_game, kick_player, change_settings, close_room]
+    player:
+      can: [ready_up, submit_proof, chat, react]
+    spectator:
+      can: [watch, chat]          # people who join mid-game
+  privacy: [public, private]      # public rooms appear in a lobby list
+  settings:                       # host-configurable
+    rounds: { default: 5, min: 1, max: 15 }
+    round_time_seconds: { default: 60, min: 20, max: 180 }
+    difficulty: { default: mixed, options: [easy, medium, hard, mixed] }
+    categories: { default: [household, kitchen, stationery, outdoor] }
+    camera_required: true
+    mic_required: false
+    allow_late_join: true
+    custom_prompts: false         # host can add own items
+    safe_mode: true               # blocks risky/unsafe items
+
+# ---------------------------------------------------------------------
+# GAME FLOW
+# ---------------------------------------------------------------------
+flow:
+  states:
+    - LOBBY              # waiting, ready-up, camera/mic permission check
+    - COUNTDOWN          # 3..2..1
+    - ROUND_ACTIVE       # item revealed, timer running
+    - VERIFYING          # detection + (optional) peer vote
+    - ROUND_RESULTS      # points shown per player
+    - LEADERBOARD        # between rounds
+    - GAME_OVER          # podium, winner, replay
+  round:
+    1: "Server picks an item from the pool and broadcasts it to all players"
+    2: "Timer starts. Players move around their room to find it"
+    3: "Player taps 'I found it' and holds item in front of camera"
+    4: "AI detects item -> confidence check -> points awarded instantly"
+    5: "Round ends when timer ends OR everyone has finished"
+    6: "Results + leaderboard shown, next round starts"
+  late_join: "Joins as spectator until next round starts"
+  disconnect:
+    grace_seconds: 30
+    on_timeout: "Player marked away; score kept; can rejoin with same room id"
+
+# ---------------------------------------------------------------------
+# ITEMS / PROMPTS
+# ---------------------------------------------------------------------
+items:
+  difficulty_rules:
+    easy:   { time_bonus: 1.0, base_points: 100, examples: [cup, pen, book, phone, shoe] }
+    medium: { time_bonus: 1.2, base_points: 150, examples: [brush, spoon, scissors, remote, key] }
+    hard:   { time_bonus: 1.5, base_points: 250, examples: [stapler, tape measure, calculator, lighter_free_alternative] }
+  categories:
+    household:  [pillow, towel, remote, clock, plant, mirror, lamp]
+    kitchen:    [spoon, fork, bowl, bottle, mug, plate, knife_safe_exclude]
+    stationery: [pen, pencil, notebook, eraser, ruler, stapler, scissors]
+    wearable:   [sock, cap, watch, glasses, belt, shoe]
+    tech:       [phone, charger, headphones, keyboard, mouse]
+    outdoor:    [leaf, stone, flower, bicycle, umbrella]
+    colour_hunt: ["something red", "something blue", "something round", "something soft"]
+  safety_blocklist:
+    - knives
+    - lighters / matches
+    - medicines
+    - anything that requires leaving the home / going outside at night
+    - other people's private property or people themselves
+  dynamic_prompts:
+    note: "Generate with an LLM, then validate against detector vocabulary before use"
+    example_riddle: "I have bristles but I'm not a hedgehog. I make hair behave. (hairbrush)"
+
+# ---------------------------------------------------------------------
+# DETECTION & VERIFICATION
+# ---------------------------------------------------------------------
+detection:
+  trigger: manual_button            # player taps 'I found it' (saves compute)
+  alt_trigger: auto_scan_every_700ms
+  frames_to_confirm: 3              # object must be seen in 3 consecutive frames
+  confidence_threshold:
+    easy: 0.55
+    medium: 0.60
+    hard: 0.65
+  pipeline:
+    - capture_frame_from_video
+    - run_detector_on_device
+    - if_label_matches_and_confidence_ok: award_points
+    - else_if_uncertain: send_to_server_clip_or_vision_model
+    - else_if_still_uncertain: open_peer_vote
+  peer_vote:
+    enabled: true
+    voters: other_players
+    window_seconds: 8
+    rule: "majority yes = accepted"
+  anti_cheat:
+    liveness_check: "Ask for random gesture (wave / hold item next to face) on suspicious submissions"
+    detect_screen_or_photo: "Reject if moire patterns / flat screen edges detected"
+    duplicate_item_block: "Same physical item can't be reused by same player in one game"
+    tab_switch_detect: true
+    random_audits: "Server saves 1 frame per win for host review/report (privacy: auto-delete)"
+    report_button: true
+
+# ---------------------------------------------------------------------
+# SCORING
+# ---------------------------------------------------------------------
+scoring:
+  formula: "base_points * difficulty_multiplier + speed_bonus + streak_bonus + first_finder_bonus"
+  speed_bonus:
+    description: "Linear: more remaining time = more points"
+    max: 100
+    calc: "floor(100 * time_left / round_time)"
+  first_finder_bonus: 50            # first correct = +50, second = +30, third = +10
+  streak_bonus:
+    per_consecutive_round: 20
+    max: 100
+  penalties:
+    wrong_submission: -10
+    max_wrong_attempts_per_round: 3
+    caught_cheating: "score for that round = 0 and warning"
+  tie_break: "Faster total solve time wins"
+  no_find: 0
+
+# ---------------------------------------------------------------------
+# LEADERBOARD
+# ---------------------------------------------------------------------
+leaderboard:
+  in_room_live:
+    storage: "Redis sorted set key = room:{roomId}:scores"
+    updates: realtime_push
+    shows: [rank, avatar, nickname, total_score, round_delta, streak_flame]
+  end_of_game:
+    podium: top_3_animation
+    awards:
+      - { name: "Speed Demon",     rule: "fastest single find" }
+      - { name: "Sharp Eye",       rule: "highest accuracy" }
+      - { name: "Never Give Up",   rule: "most finds in last 10 seconds" }
+      - { name: "Hoarder",         rule: "found the most items" }
+  global:
+    scopes: [daily, weekly, all_time, friends]
+    storage: "Redis sorted sets + periodic Postgres snapshot"
+  rewards:
+    xp_per_game: true
+    levels: true
+    badges: true
+
+# ---------------------------------------------------------------------
+# VIDEO / AUDIO
+# ---------------------------------------------------------------------
+media:
+  layout:
+    grid: "Video tiles like Skribbl player list but with live camera"
+    highlight: "Tile glows green when player finishes the round"
+  quality:
+    resolution: 480p               # keep low for performance
+    fps: 15
+    adaptive_bitrate: true
+  controls: [mute_mic, camera_off, switch_camera, flip_view]
+  privacy:
+    blur_background: true          # important, it's people's bedrooms
+    camera_off_allowed: false      # but detection needs camera; can allow 'detect-only' mode
+    detect_only_mode: "Video not shared to others; only result shared"
+    recording: never
+  voice_chat: { push_to_talk: optional, mute_all: true }
+
+# ---------------------------------------------------------------------
+# GAME MODES (IDEAS)
+# ---------------------------------------------------------------------
+modes:
+  classic:        "Everyone gets same item, fastest wins more points"
+  elimination:    "Slowest/no-find player is eliminated each round, last one wins"
+  team_battle:    "2 teams, scores combine"
+  relay:          "Team members find items one after another"
+  riddle_mode:    "Item is described as riddle, no direct name"
+  color_rush:     "Find anything of a given colour"
+  category_blitz: "Find 5 items of one category in 2 minutes"
+  mystery_box:    "Item hidden until timer starts; blind challenge"
+  sabotage:       "Winners pick a handicap for others next round (e.g. find with one hand)"
+  show_and_tell:  "Find anything, others vote for the most creative"
+  charades_mix:   "One player acts out the object on camera, others find that same object"
+  ar_hunt:        "Future: AR stickers shown on camera as hint"
+
+# ---------------------------------------------------------------------
+# POWER-UPS (earned or random)
+# ---------------------------------------------------------------------
+power_ups:
+  - { name: Hint,        effect: "Reveal first letter of the item", cost: 30_points }
+  - { name: Skip,        effect: "Swap item once, no penalty",       uses_per_game: 1 }
+  - { name: Freeze,      effect: "Freeze one opponent timer for 5s", cooldown_rounds: 2 }
+  - { name: Double,      effect: "2x points this round",             uses_per_game: 1 }
+  - { name: Shield,      effect: "Ignore one wrong-submission penalty" }
+
+# ---------------------------------------------------------------------
+# SOCIAL / FUN
+# ---------------------------------------------------------------------
+social:
+  chat: { text: true, emojis: true, profanity_filter: true }
+  reactions: [clap, fire, laugh, wow, sus]
+  replays: "Auto 5 sec highlight clip of each win (opt-in, stored locally)"
+  share: "Share final podium card to WhatsApp / Instagram"
+  friends: { add_friend: true, invite_to_room: true }
+  avatars: customizable
+  sounds: [countdown, ding_success, buzzer_fail, victory_fanfare]
+
+# ---------------------------------------------------------------------
+# REALTIME EVENTS (Socket.IO)
+# ---------------------------------------------------------------------
+events:
+  client_to_server:
+    - room:create        # {nickname, settings}
+    - room:join          # {roomId, nickname}
+    - room:leave
+    - player:ready       # {ready: bool}
+    - game:start
+    - round:submit       # {frameBlobRef, label, confidence}
+    - vote:cast          # {submissionId, approve: bool}
+    - powerup:use        # {type, target?}
+    - chat:message
+  server_to_client:
+    - room:updated       # players, settings
+    - game:countdown
+    - round:start        # {item, hint?, endsAt}
+    - round:player_found # {playerId, points}
+    - vote:request
+    - round:end          # {answers, deltas}
+    - leaderboard:update
+    - game:over          # {podium, awards}
+    - error
+
+# ---------------------------------------------------------------------
+# REST API
+# ---------------------------------------------------------------------
+api:
+  base: /api/v1
+  endpoints:
+    - { method: POST, path: /rooms,            desc: "Create room, returns roomId" }
+    - { method: GET,  path: /rooms/{roomId},   desc: "Room info (exists, player count)" }
+    - { method: POST, path: /auth/guest,       desc: "Create guest session token" }
+    - { method: GET,  path: /leaderboard,      desc: "Query: scope=daily|weekly|all" }
+    - { method: GET,  path: /items,            desc: "Item list by category" }
+    - { method: POST, path: /report,           desc: "Report cheating / abuse" }
+    - { method: GET,  path: /users/{id}/stats, desc: "Player profile and stats" }
+
+# ---------------------------------------------------------------------
+# DATA MODELS
+# ---------------------------------------------------------------------
+data_models:
+  User:       { id: uuid, nickname: string, avatar: string, xp: int, level: int, created_at: ts }
+  Room:       { id: string, host_id: uuid, settings: json, status: enum, created_at: ts }
+  Game:       { id: uuid, room_id: string, started_at: ts, ended_at: ts, winner_id: uuid }
+  Round:      { id: uuid, game_id: uuid, item_id: int, number: int, started_at: ts, ends_at: ts }
+  Submission: { id: uuid, round_id: uuid, user_id: uuid, label: string, confidence: float, status: enum[accepted, rejected, voting], points: int, time_ms: int }
+  Item:       { id: int, name: string, category: string, difficulty: enum, detector_label: string, aliases: [string] }
+  Score:      { game_id: uuid, user_id: uuid, total: int, rounds_won: int }
+
+# ---------------------------------------------------------------------
+# SAFETY, PRIVACY, LEGAL
+# ---------------------------------------------------------------------
+safety:
+  age_gate: "13+ (check local laws; add parental notice for minors)"
+  consent: "Explicit camera/mic permission screen with clear explanation"
+  data:
+    video_stored: false
+    frames_retention_hours: 24     # only for flagged reports
+    delete_account: true
+  moderation: [report_button, host_kick, auto_ban_after_3_reports]
+  physical_safety_notice: "Don't run, don't touch sharp / hot objects, stay indoors"
+  gdpr_dpdp_ready: true            # India DPDP Act + GDPR
+
+# ---------------------------------------------------------------------
+# MONETIZATION (OPTIONAL)
+# ---------------------------------------------------------------------
+monetization:
+  free: [classic_mode, 5_categories]
+  premium: [custom_rooms, extra_modes, avatars, no_ads, private_leaderboards]
+  ads: rewarded_only
+  brand_hunts: "Sponsored item packs (e.g. 'find a Pepsi bottle')"
+
+# ---------------------------------------------------------------------
+# ROADMAP
+# ---------------------------------------------------------------------
+roadmap:
+  mvp_week_1_2:
+    - Room create/join with ID
+    - Lobby + ready system
+    - Camera via WebRTC (2-4 players)
+    - 20 easy items
+    - On-device YOLO detection for COCO items
+    - Basic scoring + live leaderboard
+  v0_2_week_3_4:
+    - SFU for up to 12 players
+    - Peer voting fallback
+    - Open-vocab detection (CLIP / YOLO-World)
+    - Chat, reactions, sounds
+  v0_3_week_5_6:
+    - Game modes (elimination, color rush, riddle)
+    - Power-ups
+    - Global leaderboards, XP, badges
+  v1_0:
+    - Mobile apps
+    - Anti-cheat improvements
+    - Custom prompt packs, monetization
+    - Localization (Hindi, English, more)
+
+# ---------------------------------------------------------------------
+# RISKS & MITIGATIONS
+# ---------------------------------------------------------------------
+risks:
+  - { risk: "Detector misses items like 'brush'", fix: "Use open-vocab model + peer vote fallback" }
+  - { risk: "Cheating with phone photos/screens", fix: "Liveness gesture + screen detection" }
+  - { risk: "High latency with many video streams", fix: "SFU, 480p, low fps, detect-only mode" }
+  - { risk: "Privacy concerns", fix: "No recording, background blur, clear consent" }
+  - { risk: "Unsafe item hunting", fix: "Safe item list + safety notice" }
