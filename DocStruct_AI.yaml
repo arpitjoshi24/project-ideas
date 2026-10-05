@@ -1,0 +1,524 @@
+project:
+  name: "DocStruct AI"
+  tagline: "AI-powered academic project documentation and file structuring platform"
+
+  category:
+    - "Generative AI"
+    - "Document Management"
+    - "Academic Productivity"
+    - "Project Management"
+
+  problem_statement: |
+    College students often struggle to organize their final-year projects,
+    reports, presentations, certificates, source code documentation, diagrams,
+    references, and other academic files into the correct structure.
+
+    Different colleges and departments follow different documentation formats.
+    Generic AI tools can generate project content, but they often fail to follow
+    the exact required structure, formatting rules, section order, naming
+    conventions, and submission requirements.
+
+    Students therefore spend significant time manually organizing files,
+    rewriting documents, checking missing sections, and ensuring that their
+    project follows college guidelines.
+
+  solution: |
+    DocStruct AI is an AI-powered platform that understands a student's project,
+    college documentation guidelines, and existing project files and automatically
+    creates a structured academic project workspace.
+
+    The system analyzes uploaded documents, PDFs, Word files, images, source-code
+    documentation, and project requirements. It then creates a standardized
+    project structure, identifies missing sections, recommends where each file
+    belongs, generates required documentation, and validates the final project
+    against the selected college format.
+
+  core_idea: |
+    Instead of asking AI:
+
+      "Write my project report"
+
+    the student provides:
+
+      - Project information
+      - College/university format
+      - Department requirements
+      - Existing project files
+      - Source code/documentation
+      - Previous templates if available
+
+    The system then creates:
+
+      Project/
+      ├── 01_Project_Proposal/
+      ├── 02_Abstract/
+      ├── 03_Project_Report/
+      │   ├── Chapter_01_Introduction/
+      │   ├── Chapter_02_Literature_Review/
+      │   ├── Chapter_03_System_Analysis/
+      │   ├── Chapter_04_System_Design/
+      │   ├── Chapter_05_Implementation/
+      │   ├── Chapter_06_Testing/
+      │   ├── Chapter_07_Results/
+      │   └── Chapter_08_Conclusion/
+      ├── 04_Diagrams/
+      ├── 05_Presentation/
+      ├── 06_Source_Code/
+      ├── 07_Database/
+      ├── 08_Testing/
+      ├── 09_References/
+      └── 10_Final_Submission/
+
+  target_users:
+    primary:
+      - "College students"
+      - "Final-year project students"
+      - "Diploma students"
+      - "Research students"
+
+    secondary:
+      - "College faculty"
+      - "Project guides"
+      - "Project coordinators"
+      - "Academic departments"
+
+  main_features:
+
+    project_workspace:
+      description: |
+        Each academic project gets its own structured workspace where students
+        can manage documents, files, requirements, tasks, and AI-generated content.
+
+    college_template_engine:
+      description: |
+        Students can select an existing college template or upload their own
+        project guidelines.
+
+      inputs:
+        - "College project guidelines"
+        - "Department format"
+        - "Sample project report"
+        - "Project template"
+        - "Submission instructions"
+
+    ai_document_analyzer:
+      description: |
+        AI analyzes uploaded documents and understands their structure,
+        headings, formatting, required sections, and relationships.
+
+      supported_files:
+        - "PDF"
+        - "DOCX"
+        - "TXT"
+        - "Markdown"
+        - "Images"
+        - "ZIP"
+
+    intelligent_file_organizer:
+      description: |
+        AI automatically determines where uploaded files belong inside the
+        project structure.
+
+      example:
+        input: "architecture_diagram.png"
+        output: "04_Diagrams/System_Architecture/architecture_diagram.png"
+
+    document_generator:
+      description: |
+        Generate academic documents based on the project information and
+        college-specific structure.
+
+      documents:
+        - "Project proposal"
+        - "Abstract"
+        - "Project report"
+        - "Synopsis"
+        - "SRS"
+        - "SDS"
+        - "Testing document"
+        - "User manual"
+        - "Presentation"
+        - "References"
+        - "Acknowledgement"
+        - "Declaration"
+
+    missing_section_detector:
+      description: |
+        AI checks the current project against the selected template and
+        identifies missing sections or documents.
+
+      example:
+        missing:
+          - "Literature Review"
+          - "System Architecture Diagram"
+          - "Test Cases"
+          - "References"
+
+    ai_project_validator:
+      description: |
+        Validates the project before submission.
+
+      checks:
+        - "Missing documents"
+        - "Missing sections"
+        - "Incorrect file naming"
+        - "Incorrect document structure"
+        - "Required headings"
+        - "Reference section"
+        - "Formatting requirements"
+        - "Duplicate files"
+        - "Incomplete sections"
+
+    requirement_tracker:
+      description: |
+        Converts college project guidelines into a checklist and tracks
+        completion automatically.
+
+      status:
+        - "Not Started"
+        - "In Progress"
+        - "Completed"
+        - "Needs Review"
+
+    version_control:
+      description: |
+        Maintain different versions of project documents so students can
+        restore previous versions and track changes.
+
+    ai_project_assistant:
+      description: |
+        An AI assistant that understands the complete project context instead
+        of treating every prompt as an isolated conversation.
+
+      example_questions:
+        - "What documents are still missing?"
+        - "Create the testing chapter using my project information."
+        - "Where should I put this architecture diagram?"
+        - "Does my report follow the college format?"
+        - "What should I complete before final submission?"
+
+    export_system:
+      description: |
+        Export the complete project into submission-ready formats.
+
+      formats:
+        - "ZIP"
+        - "PDF"
+        - "DOCX"
+        - "PPTX"
+
+  workflow:
+
+    step_1:
+      name: "Create Project"
+      action: |
+        Student creates a new academic project and enters basic information.
+
+      information:
+        - "Project title"
+        - "Student names"
+        - "Enrollment numbers"
+        - "Department"
+        - "College"
+        - "Academic year"
+        - "Project guide"
+
+    step_2:
+      name: "Select Documentation Format"
+      action: |
+        Student selects a predefined college template or uploads their own
+        documentation guidelines.
+
+    step_3:
+      name: "Upload Existing Files"
+      action: |
+        Student uploads existing project files, source code, documents,
+        diagrams, presentations, and references.
+
+    step_4:
+      name: "AI Analysis"
+      action: |
+        AI analyzes the uploaded files and extracts useful information,
+        identifies document types, and understands the project context.
+
+    step_5:
+      name: "Generate Structure"
+      action: |
+        The system generates the recommended project folder and document
+        structure according to the selected academic format.
+
+    step_6:
+      name: "Organize Files"
+      action: |
+        AI categorizes existing files and moves them into the appropriate
+        project sections.
+
+    step_7:
+      name: "Generate Missing Content"
+      action: |
+        AI identifies missing documents or sections and allows the student
+        to generate them using the existing project context.
+
+    step_8:
+      name: "Validate"
+      action: |
+        The validation engine checks the complete project against the
+        selected college requirements.
+
+    step_9:
+      name: "Final Export"
+      action: |
+        Student exports the complete submission-ready project package.
+
+  example_project:
+
+    project_name: "Smart Campus Management System"
+
+    input_files:
+      - "source_code.zip"
+      - "database_schema.sql"
+      - "architecture.png"
+      - "abstract.docx"
+      - "research_paper.pdf"
+      - "presentation.pptx"
+
+    ai_output:
+      structure:
+        - "01_Project_Proposal"
+        - "02_Abstract"
+        - "03_Project_Report"
+        - "04_SRS"
+        - "05_System_Design"
+        - "06_Diagrams"
+        - "07_Implementation"
+        - "08_Testing"
+        - "09_References"
+        - "10_Presentation"
+        - "11_Source_Code"
+        - "12_Final_Submission"
+
+      detected_missing:
+        - "SRS"
+        - "Testing documentation"
+        - "System design section"
+
+      suggestions:
+        - "Generate SRS"
+        - "Create test cases"
+        - "Add database ER diagram"
+        - "Add system architecture diagram"
+
+  ai_architecture:
+
+    document_ingestion:
+      responsibilities:
+        - "File upload"
+        - "Text extraction"
+        - "OCR"
+        - "Metadata extraction"
+        - "Document classification"
+
+    document_understanding:
+      responsibilities:
+        - "Semantic analysis"
+        - "Section detection"
+        - "Requirement extraction"
+        - "Project context extraction"
+
+    project_context_engine:
+      responsibilities:
+        - "Store project knowledge"
+        - "Connect documents"
+        - "Maintain project-specific context"
+        - "Retrieve relevant information for generation"
+
+    structure_engine:
+      responsibilities:
+        - "Generate folder structure"
+        - "Generate document hierarchy"
+        - "Map files to sections"
+        - "Validate structure"
+
+    generation_engine:
+      responsibilities:
+        - "Generate missing content"
+        - "Generate documents"
+        - "Generate summaries"
+        - "Generate academic sections"
+
+    validation_engine:
+      responsibilities:
+        - "Check requirements"
+        - "Check missing sections"
+        - "Check formatting"
+        - "Check naming conventions"
+        - "Generate submission readiness score"
+
+  tech_stack:
+
+    frontend:
+      - "Next.js"
+      - "React"
+      - "TypeScript"
+      - "Tailwind CSS"
+      - "Shadcn UI"
+
+    backend:
+      - "Node.js"
+      - "Express.js"
+
+    database:
+      - "PostgreSQL"
+
+    cache:
+      - "Redis"
+
+    storage:
+      - "Cloudinary / S3-compatible object storage"
+
+    ai:
+      - "LLM API"
+      - "Embeddings"
+      - "RAG"
+      - "Vector Database"
+
+    document_processing:
+      - "PDF parser"
+      - "DOCX parser"
+      - "OCR"
+      - "Markdown parser"
+
+    infrastructure:
+      - "Docker"
+      - "Nginx"
+      - "CI/CD"
+
+  database_entities:
+    - "users"
+    - "projects"
+    - "project_members"
+    - "project_requirements"
+    - "documents"
+    - "document_versions"
+    - "folders"
+    - "templates"
+    - "template_rules"
+    - "ai_generations"
+    - "validation_reports"
+    - "references"
+    - "project_tasks"
+
+  ai_concepts:
+    rag:
+      purpose: |
+        Retrieve relevant project documents before generating content so that
+        the AI uses the student's actual project information instead of
+        generating generic content.
+
+    embeddings:
+      purpose: |
+        Convert project documents and requirements into vector representations
+        for semantic retrieval.
+
+    structured_generation:
+      purpose: |
+        Force AI responses into predefined schemas instead of accepting
+        uncontrolled free-form output.
+
+    document_classification:
+      purpose: |
+        Automatically classify uploaded files such as diagrams, reports,
+        source code, presentations, references, and certificates.
+
+    requirement_extraction:
+      purpose: |
+        Extract project rules and submission requirements from college
+        guidelines.
+
+  key_differentiator: |
+    The main difference from generic AI chatbots is that DocStruct AI does not
+    simply generate text.
+
+    It understands:
+
+      1. The student's project
+      2. The college requirements
+      3. The required document structure
+      4. Existing project files
+      5. Missing project components
+      6. Relationships between documents
+
+    The AI therefore acts as a "Project Documentation Architect" rather than
+    simply a text generator.
+
+  mvp:
+
+    phase_1:
+      name: "Project Workspace"
+      features:
+        - "Authentication"
+        - "Create project"
+        - "Project dashboard"
+        - "Folder structure"
+        - "File upload"
+
+    phase_2:
+      name: "AI File Organizer"
+      features:
+        - "File classification"
+        - "Automatic folder suggestion"
+        - "AI-generated project structure"
+        - "Drag-and-drop organization"
+
+    phase_3:
+      name: "Documentation Generator"
+      features:
+        - "Project context"
+        - "Generate abstract"
+        - "Generate SRS"
+        - "Generate report sections"
+        - "Generate testing documentation"
+
+    phase_4:
+      name: "Requirement Validator"
+      features:
+        - "Upload college template"
+        - "Extract requirements"
+        - "Missing-section detection"
+        - "Submission readiness score"
+
+    phase_5:
+      name: "Advanced AI"
+      features:
+        - "RAG"
+        - "Project knowledge base"
+        - "Document consistency checking"
+        - "Cross-document validation"
+        - "AI project assistant"
+
+  future_features:
+    - "College-specific template marketplace"
+    - "Faculty review system"
+    - "AI plagiarism-aware rewriting"
+    - "Citation manager"
+    - "Automatic bibliography generation"
+    - "LaTeX export"
+    - "IEEE template support"
+    - "Research paper generator"
+    - "Project presentation generator"
+    - "Viva question generator"
+    - "Project demo checklist"
+    - "GitHub repository integration"
+    - "Automatic source-code documentation"
+    - "Team collaboration"
+    - "Faculty comments and approvals"
+
+  final_goal: |
+    Build a platform where a student can upload their complete project and
+    college guidelines and receive a properly structured, validated, and
+    submission-ready academic project workspace.
+
+  one_line_pitch: |
+    "An AI-powered project documentation architect that turns your messy
+    college project files into a properly structured, validated, and
+    submission-ready project."
