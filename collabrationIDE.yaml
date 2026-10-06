@@ -1,976 +1,548 @@
-# Collaborative IDE
+# Collaborative IDE — Project Specification
 
-## 1. Project Overview
+| | |
+|---|---|
+| **Project type** | Real-time collaborative development environment |
+| **Category** | Developer tools · Web IDE · Distributed systems |
+| **Status** | Idea → Ready for MVP planning |
+| **Difficulty** | Advanced |
+| **Target users** | Developers, students, teams, mentors, hackathon groups |
+| **Document version** | 2.0 |
 
-**Project Name:** Collaborative IDE
-**Project Type:** Real-time Collaborative Development Environment
-**Category:** Developer Tools / Web IDE / Distributed Systems
-**Status:** Idea
-**Difficulty:** Advanced
-**Target Users:** Software developers, students, development teams, mentors, hackathon teams
+---
 
-### One-Line Description
+## 1. Overview
 
-A browser-based collaborative IDE that allows two or more developers to open the same project and **simultaneously edit, run, debug, and discuss the same codebase in real time**.
+### 1.1 Summary
 
-### Core Idea
+A browser-based IDE where two or more developers open the same project and **edit, run, and discuss the same codebase simultaneously**. Collaboration is built into the core of the product rather than layered on top of an editor.
 
-The platform works similarly to VS Code, but collaboration is a first-class feature.
+### 1.2 Vision
 
-Instead of sending files through WhatsApp, Git, or screen sharing, developers can join the same workspace and work on the same codebase simultaneously.
-
-Example:
+A **shared development environment**, not merely a code editor with a multiplayer cursor: shared files, shared terminal, shared preview, shared context.
 
 ```text
                  Collaborative Workspace
                          │
           ┌──────────────┼──────────────┐
           │              │              │
-       Developer A    Developer B    Developer C
-          │              │              │
-          ▼              ▼              ▼
-       Editing         Editing        Reviewing
-       server.js       auth.js        UI.jsx
+     Developer A    Developer B    Developer C
+     (server.js)     (auth.js)      (UI.jsx)
           │              │              │
           └──────────────┼──────────────┘
                          ▼
-                  Shared Project State
+                 Shared Project State
                          │
               ┌──────────┼──────────┐
               ▼          ▼          ▼
-           Terminal    Preview     Git
+          Terminal    Preview      Git
 ```
+
+### 1.3 Problem Statement
+
+Collaboration today is spread across many tools: an editor, GitHub, Slack/Discord, Zoom/Meet, and docs. Pair programming usually means one person types while the other watches a shared screen and waits. The goal is to make the coding environment itself collaborative so that nobody has to wait.
+
+### 1.4 Goals and Non-Goals
+
+**Goals**
+- Real-time, conflict-free co-editing of project files.
+- Visible presence: who is online, which file, which cursor and selection.
+- Safe, isolated code execution with a shared terminal and live preview.
+- Workspace roles and permissions.
+- Built-in chat and (later) Git integration.
+
+**Non-goals for the MVP**
+- Full VS Code extension compatibility.
+- Voice/video calling.
+- Collaborative debugging.
+- Native desktop app.
+- Support for every language/runtime (start with Node.js projects).
 
 ---
 
-# 2. Problem Statement
+## 2. Target Users and Use Cases
 
-Modern development collaboration usually requires several separate tools.
-
-A team might use:
-
-* VS Code for development
-* GitHub for code sharing
-* Discord/Slack for communication
-* Zoom/Meet for screen sharing
-* Google Docs for documentation
-
-This creates friction when developers want to work on the **same code at the same time**.
-
-For example, during pair programming:
-
-```text
-Developer A → shares screen
-Developer B → explains changes
-Developer A → writes code
-Developer B → waits
-```
-
-The goal of this project is to make the coding environment itself collaborative.
+| User | Use case |
+|---|---|
+| Pair programmers | Co-write and review code without screen sharing |
+| Students and mentors | Mentor watches and edits live; read-only "classroom" mode |
+| Hackathon teams | Spin up a workspace in seconds, no local setup |
+| Interviewers | Live coding with a candidate in a controlled environment |
+| Remote teams | Quick debugging sessions on shared code |
 
 ---
 
-# 3. Proposed Solution
+## 3. Functional Requirements
 
-Create a web-based IDE where users can:
+Priority: **P0** = MVP, **P1** = after MVP, **P2** = future.
 
-1. Create a project/workspace.
-2. Invite other developers.
-3. Open the same files simultaneously.
-4. See other developers' cursors.
-5. See who is editing which part of a file.
-6. Make simultaneous edits without overwriting each other.
-7. Run the project.
-8. Access a shared terminal.
-9. View the application preview.
-10. Communicate through chat.
-11. Track changes.
-12. Optionally integrate Git/GitHub.
+### 3.1 Authentication (P0)
 
-The key technical challenge is **real-time synchronization of code changes**.
+- Register, login, logout, password reset, profile management.
+- View the list of workspaces the user belongs to.
+- Email + password with short-lived JWT access tokens and rotating refresh tokens (httpOnly, secure cookie).
+- P1: OAuth login (GitHub, Google).
 
----
+### 3.2 Workspaces (P0)
 
-# 4. Main Features
+A workspace is a collaborative environment containing members, project files, a terminal, a preview, chat, and Git state.
 
-## 4.1 Authentication
+- Create, rename, delete workspace.
+- Invite members (by link or email), remove members, change roles, leave workspace.
+- Invite links are expiring and revocable.
 
-Users can:
+### 3.3 File System (P0)
 
-* Register
-* Login
-* Logout
-* Reset password
-* Manage profile
-* View their workspaces
+- Create, rename, move, delete files and folders.
+- File explorer tree with live updates when others change the structure.
+- Upload and download project as a zip (P1).
 
-Possible authentication:
+### 3.4 Real-Time Code Collaboration (P0 — core feature)
 
-```text
-Email + Password
-       │
-       ▼
-JWT Access Token
-       │
-       ▼
-Refresh Token
-```
+- Simultaneous editing of the same file by multiple users.
+- Live remote cursors and selections with user names and colors.
+- Automatic conflict resolution (no overwritten edits).
+- Reconnection and offline-edit merge.
+- Per-user undo/redo (undo only your own changes).
 
----
+### 3.5 Presence (P0)
 
-# 5. Workspace System
+- Online / idle / offline status.
+- Current file and cursor position.
+- Presence is ephemeral and never persisted to the main database.
 
-A workspace represents a collaborative development environment.
+### 3.6 Editor (P0)
 
-Example:
+Built on Monaco (recommended) or CodeMirror 6: syntax highlighting, tabs, search/replace, keyboard shortcuts, themes, minimap, and error highlighting. Language-server-powered autocomplete is P1.
 
-```text
-Workspace
-│
-├── Members
-│   ├── Arpit
-│   ├── Rahul
-│   └── Aman
-│
-├── Project Files
-│   ├── package.json
-│   ├── src/
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   └── server/
-│       └── index.js
-│
-├── Terminal
-├── Preview
-├── Chat
-└── Git
-```
+### 3.7 Roles and Permissions (P0)
 
-### Workspace Operations
+| Capability | Owner | Admin | Developer | Viewer |
+|---|:-:|:-:|:-:|:-:|
+| View code, chat, preview | ✅ | ✅ | ✅ | ✅ |
+| Edit code | ✅ | ✅ | ✅ | ❌ |
+| Run project / use terminal | ✅ | ✅ | ✅ | ❌ |
+| Manage members | ✅ | ✅ | ❌ | ❌ |
+| Manage project settings | ✅ | ✅ | ❌ | ❌ |
+| Delete workspace / transfer ownership | ✅ | ❌ | ❌ | ❌ |
 
-Users can:
+Permissions are enforced **on the server** for every REST call and WebSocket message, never only in the UI.
 
-* Create workspace
-* Rename workspace
-* Delete workspace
-* Invite members
-* Remove members
-* Change member permissions
-* Leave workspace
+### 3.8 Chat (P1)
+
+Workspace chat with messages, @mentions, file references (click to open), code snippets, timestamps, and online status. Persisted in PostgreSQL.
+
+### 3.9 Shared Terminal and Execution (P1)
+
+- Per-workspace isolated container (see Section 7).
+- Shared terminal: all developers see the same session; write access limited to Developer+ roles.
+- Run/stop controls, resource usage, and idle shutdown.
+
+### 3.10 Live Preview (P1)
+
+Temporary, authenticated preview URL that proxies to the dev server inside the workspace container (see Section 7.3).
+
+### 3.11 Code Awareness (P1)
+
+Make collaboration visible in the editor: remote cursors, selection highlights, "Rahul is editing this line" indicators, recently modified line markers, and per-file activity badges in the explorer.
+
+### 3.12 Git Integration (P1 → P2)
+
+- P1: status, diff, commit, branch, checkout.
+- P2: push/pull, GitHub import via OAuth, shared conflict resolution.
 
 ---
 
-# 6. Real-Time Code Collaboration
+## 4. Non-Functional Requirements
 
-This is the **core feature** of the project.
-
-Multiple users should be able to edit the same file simultaneously.
-
-Example:
-
-```text
-                    App.jsx
-
-Developer A
-       │
-       ├── types: "const user = ..."
-       │
-       ▼
-┌───────────────────────────────┐
-│        Collaboration          │
-│           Server              │
-└───────────────┬───────────────┘
-                │
-       synchronized state
-                │
-        ┌───────┴────────┐
-        ▼                ▼
- Developer B        Developer C
-```
-
-### Requirements
-
-The system should support:
-
-* Real-time text changes
-* Cursor positions
-* Selection ranges
-* User presence
-* File opening status
-* Multiple simultaneous editors
-* Conflict resolution
-* Reconnection
-* Offline/reconnect synchronization
+| Area | Target (initial) |
+|---|---|
+| **Latency** | Local edit applied instantly; remote edit visible < 150 ms on the same region, < 300 ms globally |
+| **Capacity** | MVP: 10 concurrent editors per workspace; design for 100 viewers |
+| **Availability** | 99.5% for MVP; graceful degradation if execution service is down (editing still works) |
+| **Durability** | No acknowledged edit is lost; document snapshots persisted at least every 30 s and on last-user-leave |
+| **Security** | OWASP Top 10 mitigations, isolated execution, least-privilege access (see Section 8) |
+| **Accessibility** | Keyboard-navigable UI, WCAG 2.1 AA colors for presence indicators |
+| **Browser support** | Latest two versions of Chrome, Edge, Firefox, Safari |
+| **Observability** | Structured logs, metrics, tracing, error reporting |
 
 ---
 
-# 7. Conflict Resolution
+## 5. Real-Time Collaboration Design
 
-This is one of the most important technical problems.
+### 5.1 Conflict Resolution: OT vs CRDT
 
-Suppose:
+Example conflict: both users change `const name = "Arpit";` at the same moment, one to `"Rahul"` and the other to `"Aman"`. The system must merge deterministically without silently discarding either edit.
 
-```text
-Initial:
+| | Operational Transformation | CRDT |
+|---|---|---|
+| Server required | Central server transforms ops | Peer-to-peer capable; server optional |
+| Offline support | Harder | Natural |
+| Implementation complexity | High (transform functions are subtle) | Library-dependent, moderate |
+| Memory overhead | Low | Higher (tombstones; mitigated by GC) |
+| Ecosystem | ShareDB | **Yjs**, Automerge |
 
-const name = "Arpit";
-```
+**Decision:** use **Yjs** (CRDT) with the `y-monaco` binding and `y-protocols` awareness for cursors and presence. It provides offline merge, reconnection, and per-user undo out of the box. Implementing a custom CRDT/OT engine is kept as a stretch learning goal behind an interface so the engine can be swapped.
 
-Developer A changes:
-
-```text
-const name = "Rahul";
-```
-
-At almost the same time Developer B changes:
+### 5.2 Synchronization Flow
 
 ```text
-const name = "Aman";
-```
-
-The system must prevent one user's changes from simply overwriting another user's changes.
-
-Possible technologies:
-
-### Option A — Operational Transformation (OT)
-
-Transform concurrent operations before applying them.
-
-```text
-Operation A
-     │
-     ▼
-Transform
-     ▲
-     │
-Operation B
-```
-
-### Option B — CRDT
-
-Represent the document as a conflict-free replicated data structure.
-
-The project can initially use an existing CRDT implementation and later explore implementing parts of synchronization independently.
-
----
-
-# 8. Communication Layer
-
-The real-time layer can use:
-
-* WebSockets
-* Socket.IO
-* WebRTC where appropriate
-
-Example:
-
-```text
-Client A
-   │
-   │ WebSocket
+Client (Monaco + Y.Doc)
+   │  1. local edit applied instantly
+   │  2. Yjs update (binary) sent over WebSocket
    ▼
-Collaboration Server
-   │
-   ├── document updates
-   ├── cursor updates
-   ├── presence
-   ├── terminal events
-   └── chat messages
-   │
+Collaboration Server (per-document room)
+   │  3. validate token + role (Viewer updates rejected)
+   │  4. apply to server-side Y.Doc
+   │  5. broadcast update to other clients
+   │  6. debounce-persist snapshot + incremental updates
    ▼
-Client B
+Other clients apply update → editor updates
 ```
 
----
+### 5.3 Reconnection
 
-# 9. Presence System
+1. Client keeps its local `Y.Doc` while disconnected and continues to accept edits.
+2. On reconnect, client sends its **state vector**.
+3. Server replies with the missing updates; client sends its own missing updates.
+4. Both converge automatically. The UI shows a "Reconnecting… / Synced" indicator.
 
-Users should be able to see who is currently online.
+### 5.4 Presence and Awareness
 
-Example:
-
-```text
-ONLINE
-
-🟢 Arpit
-   editing App.jsx
-
-🟢 Rahul
-   editing server.js
-
-🟡 Aman
-   idle
-```
-
-Presence information:
+Presence is transmitted via the Yjs awareness protocol and held in memory/Redis with a TTL, not in PostgreSQL.
 
 ```yaml
-user:
-  id:
-  name:
-  avatar:
-  status: online
-  current_file:
-  cursor_position:
-  last_activity:
+presence:
+  user: { id, name, avatar, color }
+  status: online | idle | offline
+  current_file: src/App.jsx
+  cursor: { line, column }
+  selection: { start, end }
+  last_activity: 2026-01-01T10:00:00Z
 ```
+
+### 5.5 Persistence of Document State
+
+- Live state: Yjs document in the collaboration server memory.
+- Durable state: incremental updates in the database, periodically compacted into snapshots.
+- Source of truth for the project filesystem: a workspace volume / object storage; documents are flushed to the filesystem so the terminal and Git see current code.
+- Version history and playback (P2) can reuse the stored update log.
+
+### 5.6 Scaling the Collaboration Layer
+
+- A document room is owned by **one** collaboration server instance at a time (sticky routing by `workspace_id`/`file_id`).
+- Redis Pub/Sub distributes messages when clients of one room are connected to different nodes, or rooms are routed via consistent hashing.
+- Horizontal scale by adding collaboration nodes; PostgreSQL and Redis are shared.
+- Backpressure: per-connection rate limits and maximum message size.
 
 ---
 
-# 10. Code Editor
-
-The application should provide a VS Code-like editor.
-
-Potential editor technologies:
-
-* Monaco Editor
-* CodeMirror
-
-Editor capabilities:
-
-* Syntax highlighting
-* Auto-completion
-* Multiple tabs
-* Search
-* Replace
-* File navigation
-* Keyboard shortcuts
-* Themes
-* Minimap
-* Error highlighting
-
-Example UI:
+## 6. System Architecture
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│ File   Edit   View   Terminal                           │
-├─────────────┬───────────────────────────────┬───────────┤
-│             │                               │           │
-│ Explorer    │          Editor               │ AI /      │
-│             │                               │ Chat      │
-│ src/        │  1  import React             │           │
-│ ├ App.jsx   │  2                            │ Arpit     │
-│ ├ main.jsx  │  3  function App() {         │ Rahul     │
-│ └ api.js    │  4     return (...)          │ Aman      │
-│             │  5  }                        │           │
-│             │                               │           │
-├─────────────┴───────────────────────────────┴───────────┤
-│ Terminal                                                 │
-│ $ npm run dev                                            │
-│ Server running on port 3000                              │
-└─────────────────────────────────────────────────────────┘
-```
-
----
-
-# 11. Shared Terminal
-
-Users should be able to execute project commands.
-
-Examples:
-
-```bash
-npm install
-npm run dev
-npm test
-git status
-```
-
-However, terminal execution must happen in an **isolated environment**.
-
-Never execute arbitrary user commands directly on the main application server.
-
-Recommended architecture:
-
-```text
-User
- │
- ▼
-API Server
- │
- ▼
-Job / Execution Service
- │
- ▼
-Isolated Container
- │
- ├── CPU limit
- ├── Memory limit
- ├── Network policy
- └── Time limit
-```
-
-Each workspace can receive its own isolated development environment.
-
----
-
-# 12. Live Preview
-
-For web projects, users should be able to see the running application.
-
-Example:
-
-```text
-┌───────────────────────────────┐
-│        Application Preview    │
-├───────────────────────────────┤
-│                               │
-│        My React App           │
-│                               │
-│        [ Login ]              │
-│                               │
-└───────────────────────────────┘
-```
-
-Possible architecture:
-
-```text
-Code
- │
- ▼
-Container
- │
- ▼
-Development Server
- │
- ▼
-Reverse Proxy
- │
- ▼
-Temporary Preview URL
-```
-
----
-
-# 13. Chat
-
-Every workspace can have a small real-time chat.
-
-Features:
-
-* Messages
-* Mentions
-* File references
-* Code snippets
-* Message timestamps
-* Online status
-
-Example:
-
-```text
-Rahul:
-I fixed the authentication bug.
-
-Arpit:
-Which file?
-
-Rahul:
-@Arpit src/auth/login.js
-
-Aman:
-I'll review it.
-```
-
----
-
-# 14. Code Awareness
-
-A major differentiating feature can be making collaboration visible inside the editor.
-
-Example:
-
-```text
-App.jsx
-
-1  import React from "react";
-2
-3  function App() {
-4
-5  █ Rahul is editing this line
-6
-7      return <Dashboard />;
-8  }
-```
-
-Users could see:
-
-* Other developers' cursors
-* Selection areas
-* User names
-* File activity
-* Recently modified lines
-
----
-
-# 15. Permissions
-
-Different workspace roles:
-
-```text
-OWNER
-  │
-  ├── manage workspace
-  ├── manage members
-  ├── delete workspace
-  └── full code access
-       
-ADMIN
-  │
-  ├── manage members
-  └── manage project
-
-DEVELOPER
-  │
-  ├── edit code
-  ├── run project
-  └── use terminal
-
-VIEWER
-  │
-  └── read-only access
-```
-
----
-
-# 16. Git Integration
-
-Optional initial Git functionality:
-
-```text
-Workspace
-    │
-    ▼
-Git Repository
-    │
-    ├── status
-    ├── diff
-    ├── commit
-    ├── branch
-    └── push/pull
-```
-
-Future GitHub integration:
-
-```text
-GitHub
-   │
-   ▼
-Import Repository
-   │
-   ▼
-Collaborative Workspace
-```
-
----
-
-# 17. Architecture
-
-## High-Level Architecture
-
-```text
-                    ┌───────────────────┐
-                    │     Frontend      │
-                    │ React / Next.js   │
-                    └─────────┬─────────┘
-                              │
-                    HTTPS / WebSocket
-                              │
-             ┌────────────────┴────────────────┐
-             │                                 │
-             ▼                                 ▼
-      ┌──────────────┐                  ┌──────────────┐
-      │ API Server   │                  │ Collaboration│
-      │              │                  │ Server       │
-      └──────┬───────┘                  └──────┬───────┘
-             │                                 │
-             ├──────────────┐          ┌───────┴───────┐
-             │              │          │               │
-             ▼              ▼          ▼               ▼
-       PostgreSQL         Redis    Document State   Presence
+                   ┌─────────────────────┐
+                   │      Frontend       │
+                   │ Next.js / React     │
+                   │ Monaco + Yjs        │
+                   └──────────┬──────────┘
+                              │ HTTPS / WSS
+              ┌───────────────┴────────────────┐
+              ▼                                ▼
+      ┌──────────────┐                 ┌───────────────┐
+      │  API Server  │                 │ Collaboration │
+      │ REST · Auth  │                 │ Server (WS)   │
+      └──────┬───────┘                 └──────┬────────┘
+             │                                │
+   ┌─────────┼──────────┐              ┌──────┴───────┐
+   ▼         ▼          ▼              ▼              ▼
+PostgreSQL  Redis   Object/Volume   Doc state      Presence
+                    storage         (Yjs)
              │
              ▼
-       User/Workspace
-          Metadata
-
-             API Server
-                  │
-                  ▼
-          Execution Service
-                  │
-                  ▼
-             Containers
-                  │
-                  ▼
-            Live Preview
+     Execution Service ──► Isolated containers ──► Reverse proxy ──► Preview URL
 ```
+
+**Components**
+
+| Component | Responsibility |
+|---|---|
+| Frontend | UI, Monaco editor, Yjs client, state (Zustand) |
+| API Server | Auth, workspaces, members, files metadata, chat history, invites |
+| Collaboration Server | WebSocket rooms, Yjs sync, awareness, permission checks |
+| Execution Service | Container lifecycle, terminal streams, resource limits |
+| Reverse Proxy | Routes preview traffic to the right container, enforces auth |
+| PostgreSQL | Relational metadata |
+| Redis | Presence, Pub/Sub, rate limiting, ephemeral state |
 
 ---
 
-# 18. Suggested Technology Stack
+## 7. Execution Environment
 
-## Frontend
+> **Never** run user commands on the main application servers.
 
-```text
-Next.js / React
-TypeScript
-Monaco Editor
-Tailwind CSS
-Zustand / Redux Toolkit
-WebSocket / Socket.IO client
-```
-
-## Backend
+### 7.1 Architecture
 
 ```text
-Node.js
-Express / Fastify
-TypeScript
-WebSocket / Socket.IO
+User → API Server → Execution Service → Isolated Container
+                                         ├── CPU limit
+                                         ├── Memory limit
+                                         ├── Process (PID) limit
+                                         ├── Disk quota
+                                         ├── Network policy
+                                         └── Time limit
 ```
 
-## Database
+### 7.2 Isolation Requirements
+
+- One container (or microVM) per workspace; never shared between workspaces.
+- Run as a non-root user, read-only root filesystem, writable workspace volume only.
+- Drop all Linux capabilities, apply seccomp/AppArmor profiles, no privileged mode, no Docker socket access.
+- Default-deny egress; allow-list package registries (npm, PyPI) through a proxy.
+- Hard limits on CPU, memory, PIDs, disk, and wall-clock time; auto-stop on idle.
+- For stronger isolation in production, evaluate gVisor, Firecracker, or Kata Containers instead of plain Docker.
+- Abuse protection: rate limits, crypto-mining detection, per-user quotas.
+
+### 7.3 Live Preview
 
 ```text
-PostgreSQL
+Dev server in container → Reverse proxy → https://<workspace-id>.preview.example.com
 ```
 
-Store:
-
-* Users
-* Workspaces
-* Workspace members
-* Projects
-* Files metadata
-* Permissions
-* Chat history
-* Git metadata
+- Preview URLs are unguessable and require authentication by default (public sharing is an explicit opt-in).
+- Each preview on its own subdomain to isolate cookies and origins.
+- WebSocket proxying supported for hot module reload.
 
 ---
 
-# 19. Real-Time Infrastructure
+## 8. Security
 
-```text
-WebSocket
-Redis
-CRDT / OT
-```
-
-Redis can be used for:
-
-* Presence
-* Pub/Sub
-* Distributed WebSocket coordination
-* Temporary workspace state
-* Rate limiting
+| Threat | Mitigation |
+|---|---|
+| Account takeover | Argon2id password hashing, rate-limited login, optional 2FA, token rotation |
+| Unauthorized file access | Server-side role checks on every request and WebSocket message |
+| WebSocket abuse | Auth on connect, per-message validation, size and rate limits, origin checks |
+| Malicious code execution | Container isolation (Section 7), resource limits, egress control |
+| XSS in chat/preview | Output encoding, strict CSP, sandboxed preview origins |
+| CSRF | SameSite cookies, CSRF tokens for cookie-authenticated routes |
+| Invite-link leakage | Expiring, single-use or limited-use, revocable links |
+| Secrets in workspaces | Encrypted workspace secrets store; never logged or shown to Viewers |
+| Data leakage between tenants | Tenant-scoped queries, separate volumes/containers, regular audits |
 
 ---
 
-# 20. Execution Infrastructure
+## 9. Data Model
 
-```text
-Docker
-        │
-        ▼
-Execution Worker
-        │
-        ▼
-Isolated Container
+### 9.1 Relational Schema (PostgreSQL)
+
+```sql
+CREATE TABLE users (
+  id            UUID PRIMARY KEY,
+  name          TEXT NOT NULL,
+  email         CITEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  avatar_url    TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE workspaces (
+  id          UUID PRIMARY KEY,
+  name        TEXT NOT NULL,
+  owner_id    UUID NOT NULL REFERENCES users(id),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  deleted_at  TIMESTAMPTZ
+);
+
+CREATE TYPE member_role AS ENUM ('owner', 'admin', 'developer', 'viewer');
+
+CREATE TABLE workspace_members (
+  workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+  user_id      UUID REFERENCES users(id) ON DELETE CASCADE,
+  role         member_role NOT NULL,
+  joined_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (workspace_id, user_id)
+);
+
+CREATE TABLE workspace_invites (
+  id           UUID PRIMARY KEY,
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  token_hash   TEXT NOT NULL,
+  role         member_role NOT NULL,
+  expires_at   TIMESTAMPTZ NOT NULL,
+  max_uses     INT,
+  used_count   INT NOT NULL DEFAULT 0,
+  revoked_at   TIMESTAMPTZ
+);
+
+CREATE TABLE projects (
+  id             UUID PRIMARY KEY,
+  workspace_id   UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  repository_url TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE files (
+  id         UUID PRIMARY KEY,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  path       TEXT NOT NULL,
+  language   TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (project_id, path)
+);
+
+CREATE TABLE document_snapshots (
+  file_id    UUID REFERENCES files(id) ON DELETE CASCADE,
+  version    BIGINT NOT NULL,
+  state      BYTEA NOT NULL,          -- encoded Yjs state
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (file_id, version)
+);
+
+CREATE TABLE chat_messages (
+  id           UUID PRIMARY KEY,
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  user_id      UUID NOT NULL REFERENCES users(id),
+  message      TEXT NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE sessions (
+  id              UUID PRIMARY KEY,
+  workspace_id    UUID NOT NULL REFERENCES workspaces(id),
+  user_id         UUID NOT NULL REFERENCES users(id),
+  connected_at    TIMESTAMPTZ NOT NULL,
+  disconnected_at TIMESTAMPTZ
+);
+
+CREATE INDEX ON chat_messages (workspace_id, created_at DESC);
+CREATE INDEX ON workspace_members (user_id);
 ```
 
-Each execution should have:
+### 9.2 Ephemeral State (Redis)
 
-```text
-CPU limit
-Memory limit
-Execution timeout
-Filesystem isolation
-Network restrictions
-Process limits
-```
-
-This becomes an important security component.
+| Key | Contents | TTL |
+|---|---|---|
+| `presence:{workspace}:{user}` | Status, current file, cursor | ~30 s, refreshed by heartbeat |
+| `room:{file}:node` | Collaboration node owning the room | While room active |
+| `ratelimit:{user}:{route}` | Request counters | Window length |
 
 ---
 
-# 21. Database Design
+## 10. API Design
 
-Potential tables:
+### 10.1 REST (examples)
 
-```text
-users
-─────
-id
-name
-email
-password_hash
-created_at
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/auth/register` · `/auth/login` · `/auth/refresh` · `/auth/logout` | Authentication |
+| GET/POST | `/workspaces` | List / create workspaces |
+| PATCH/DELETE | `/workspaces/:id` | Rename / delete |
+| POST | `/workspaces/:id/invites` | Create invite |
+| POST | `/invites/:token/accept` | Join workspace |
+| PATCH/DELETE | `/workspaces/:id/members/:userId` | Change role / remove |
+| GET | `/workspaces/:id/files` | File tree |
+| POST/PATCH/DELETE | `/workspaces/:id/files` | Create / rename / delete |
+| GET | `/workspaces/:id/chat?before=` | Paginated chat history |
 
-workspaces
-──────────
-id
-name
-owner_id
-created_at
+### 10.2 WebSocket Channels
 
-workspace_members
-─────────────────
-workspace_id
-user_id
-role
-joined_at
+| Channel | Events |
+|---|---|
+| `/collab/:fileId` | Yjs sync step 1/2, updates, awareness |
+| `/workspace/:id` | File-tree changes, member join/leave, chat messages, presence |
+| `/terminal/:workspaceId` | Input, output, resize, session lifecycle |
 
-projects
-────────
-id
-workspace_id
-name
-repository_url
-
-files
-─────
-id
-project_id
-path
-language
-created_at
-updated_at
-
-chat_messages
-─────────────
-id
-workspace_id
-user_id
-message
-created_at
-
-sessions
-─────────
-id
-workspace_id
-user_id
-connected_at
-disconnected_at
-```
-
-The actual document contents can be handled separately from relational metadata depending on the synchronization architecture.
+All connections authenticate with a short-lived token on connect and re-check permissions on role changes (a demoted user is immediately downgraded or disconnected).
 
 ---
 
-# 22. Core Real-Time Data Model
+## 11. Technology Stack
 
-A collaboration session could conceptually maintain:
-
-```yaml
-session:
-  workspace_id:
-  connected_users:
-
-    - user_id:
-      current_file:
-      cursor:
-      selection:
-      status:
-
-  documents:
-
-    App.jsx:
-      version:
-      state:
-
-    server.js:
-      version:
-      state:
-```
+| Layer | Choice | Notes |
+|---|---|---|
+| Frontend | Next.js / React, TypeScript, Tailwind CSS | |
+| Editor | Monaco Editor + `y-monaco` | CodeMirror 6 as alternative |
+| Client state | Zustand | Redux Toolkit is a valid alternative |
+| Real-time | WebSocket (`ws`/`y-websocket`), Socket.IO for non-document events | WebRTC only for future voice/video |
+| Collaboration | Yjs | Behind an adapter interface |
+| Backend | Node.js, TypeScript, Fastify (or Express) | |
+| Database | PostgreSQL | Prisma or Drizzle ORM |
+| Cache / messaging | Redis | |
+| Execution | Docker (→ gVisor/Firecracker), Terminal via `node-pty` inside container, xterm.js in browser | |
+| Proxy | Traefik / Nginx / Caddy | Dynamic routing for previews |
+| Infra | Docker Compose (dev), Kubernetes or Nomad (prod) | |
+| CI/CD | GitHub Actions | |
+| Monitoring | OpenTelemetry, Prometheus, Grafana, Sentry | |
 
 ---
 
-# 23. Important Engineering Challenges
+## 12. Engineering Challenges
 
-This project is primarily interesting because of its engineering challenges.
-
-### Challenge 1 — Concurrent editing
-
-How do multiple users modify one document without losing changes?
-
-### Challenge 2 — Network latency
-
-What happens when:
-
-```text
-User A → edit
-        ↓
-     Network
-        ↓
-     Server
-        ↓
-     User B
-```
-
-takes 100–300 ms?
-
-### Challenge 3 — Reconnection
-
-A developer loses internet for 10 seconds.
-
-When they reconnect:
-
-```text
-Local state
-     +
-Server state
-     ↓
-Synchronization
-```
-
-must occur safely.
-
-### Challenge 4 — Scaling
-
-If:
-
-```text
-Workspace A → 5 users
-Workspace B → 20 users
-Workspace C → 100 users
-```
-
-the collaboration layer must handle many simultaneous sessions.
-
-### Challenge 5 — Secure code execution
-
-Running arbitrary code inside a cloud service is dangerous.
-
-The execution layer needs strong isolation.
+| # | Challenge | Approach |
+|---|---|---|
+| 1 | Concurrent edits without data loss | Yjs CRDT, property-based tests with random concurrent edits |
+| 2 | Latency of 100–300 ms | Optimistic local apply, binary updates, batching, regional deployment (later) |
+| 3 | Reconnection after network loss | State-vector sync, local buffering, UI indicators |
+| 4 | Scaling rooms and users | Sticky room routing, Redis Pub/Sub, load tests |
+| 5 | Safe execution of arbitrary code | Hardened containers/microVMs, egress control, quotas |
+| 6 | Keeping editor docs and filesystem consistent | Debounced flush, file-watcher in the container, conflict policy for external changes (e.g. `git checkout`) |
+| 7 | Memory growth of CRDT history | Garbage collection, snapshot compaction |
 
 ---
 
-# 24. MVP
+## 13. Roadmap
 
-Do **not** build everything initially.
+### Phase 1 — Basic IDE (MVP core)
+Login → workspace → file explorer → Monaco editor → save files.
+**Exit criteria:** a single user can create a workspace, manage files, and edit persistently.
 
-### Phase 1 — Basic IDE
+### Phase 2 — Real-time collaboration
+WebSocket server → Yjs shared documents → multiple users → cursor presence.
+**Exit criteria:** two browsers edit one file concurrently and converge; reconnect works.
 
-Build:
-
-```text
-Login
-  ↓
-Workspace
-  ↓
-File Explorer
-  ↓
-Monaco Editor
-  ↓
-Save Files
-```
-
-### Phase 2 — Collaboration
-
-Add:
-
-```text
-WebSocket
-   ↓
-Shared document
-   ↓
-Multiple users
-   ↓
-Cursor presence
-```
-
-### Phase 3 — Workspace
-
-Add:
-
-```text
-Members
-Roles
-Permissions
-Chat
-```
+### Phase 3 — Workspace management
+Members, invites, roles, permission enforcement, chat.
+**Exit criteria:** role matrix in Section 3.7 verified by automated tests.
 
 ### Phase 4 — Execution
-
-Add:
-
-```text
-Docker
-   ↓
-Code execution
-   ↓
-Terminal
-   ↓
-Preview
-```
+Container service → run commands → shared terminal → preview URL.
+**Exit criteria:** a sample React/Node project runs and previews safely under resource limits.
 
 ### Phase 5 — Git
+Status, diff, commit, branch, push/pull, GitHub import.
 
-Add:
-
-```text
-Git status
-Commit
-Branch
-Push
-Pull
-GitHub import
-```
+### Phase 6 — Advanced features
+See Section 15.
 
 ---
 
-# 25. Future Features
+## 14. Testing Strategy
 
-Possible advanced features:
-
-* Voice/video calls
-* Screen sharing
-* AI coding assistant
-* AI code review
-* Shared debugging
-* Breakpoint synchronization
-* Collaborative Git conflict resolution
-* Session recording
-* Code playback
-* Project activity timeline
-* Pair-programming mode
-* Interview mode
-* Classroom mode
-* Hackathon workspace
-* Temporary public workspace
-* Plugin system
-* VS Code extension
-* Desktop application
+| Type | Scope |
+|---|---|
+| Unit | Permission logic, API handlers, utilities |
+| Integration | REST + DB, WebSocket auth and room join, Redis presence |
+| Convergence / fuzz | Random concurrent edits from N simulated clients must converge to identical text |
+| Network chaos | Packet delay, loss, disconnect/reconnect during edits |
+| Load | Many rooms × many clients; measure p95 latency and memory |
+| Security | Container escape attempts, permission bypass, fuzzing WebSocket messages, dependency scanning |
+| End-to-end | Playwright with two simultaneous browser contexts |
 
 ---
 
-# 26. Unique Extensions
+## 15. Future Features
 
-### Collaborative Debugger
+**Collaboration:** voice/video calls, screen sharing, pair-programming (follow mode), interview mode, classroom mode, hackathon workspaces, temporary public workspaces.
 
-Two developers can debug the same application simultaneously.
+**Intelligence:** collaborative AI mentor that sees workspace context (e.g. "Why is this API returning 401?"), AI code review.
 
-```text
-Developer A
-     │
-     ▼
-Breakpoint
-     │
-     ▼
-Shared Debug Session
-     │
-     ├── Variables
-     ├── Call Stack
-     └── Execution State
-     │
-     ▼
-Developer B
-```
+**Developer experience:** collaborative debugger with synchronized breakpoints, shared variables and call stack; session recording and code playback from stored operations; project activity timeline; collaborative Git conflict resolution.
 
-### Code Playback
-
-Record document operations and replay how the code evolved.
+**Platform:** plugin system, VS Code extension, desktop app.
 
 ```text
+Code playback example
 10:00 ─ Initial code
 10:05 ─ Function added
 10:12 ─ Bug introduced
@@ -978,133 +550,50 @@ Record document operations and replay how the code evolved.
 10:25 ─ Feature completed
 ```
 
-### Collaborative AI Mentor
+---
 
-AI can understand the shared workspace and answer:
+## 16. Success Criteria
 
-> "Why is this API returning 401?"
+The MVP succeeds when:
 
-The AI sees the relevant code and project context rather than only a pasted snippet.
+- [ ] Two users can join the same workspace and open the same file.
+- [ ] Both can edit simultaneously and see changes in real time.
+- [ ] Concurrent edits merge without loss; reconnecting clients converge.
+- [ ] Cursors, selections, and presence are visible.
+- [ ] Users can create and manage files and folders.
+- [ ] Roles and permissions are enforced on the server.
+- [ ] A supported project runs safely in an isolated container.
+- [ ] The application preview is visible to workspace members.
 
 ---
 
-# 27. Success Criteria
+## 17. Risks and Open Questions
 
-The MVP is successful when:
-
-* Two users can enter the same workspace.
-* Both can open the same file.
-* Both can edit simultaneously.
-* Changes appear in real time.
-* Concurrent edits don't unnecessarily overwrite each other.
-* User cursors/presence are visible.
-* Users can create and manage files.
-* Users can run a supported project safely.
-* Users can see the application preview.
-
----
-
-# 28. Learning Objectives
-
-This project can demonstrate knowledge of:
-
-### Frontend
-
-* React/Next.js
-* Monaco Editor
-* WebSocket clients
-* State management
-* Real-time UI
-
-### Backend
-
-* REST APIs
-* WebSockets
-* Authentication
-* Authorization
-* Event-driven architecture
-
-### Distributed Systems
-
-* Concurrency
-* Conflict resolution
-* CRDT/OT
-* Event ordering
-* Consistency
-* Presence
-* Reconnection
-* Horizontal scaling
-
-### Infrastructure
-
-* Docker
-* Redis
-* Reverse proxy
-* Container isolation
-* Process management
-
-### Database
-
-* PostgreSQL
-* Transactions
-* Relational modeling
-* Workspace/member relationships
+| Risk / question | Impact | Mitigation / next step |
+|---|---|---|
+| Container escape or abuse of free compute | Critical | Hardened runtime, quotas, egress control; consider limiting terminal at first |
+| Execution costs scale with users | High | Idle shutdown, per-user quotas, ephemeral workspaces |
+| Scope too large for one developer | High | Strict phase gates; ship Phase 2 as a usable product first |
+| CRDT memory growth on large files | Medium | Size limits, GC, snapshot compaction |
+| Monaco binding edge cases | Medium | Fuzz tests; keep CodeMirror as fallback |
+| Should the terminal be single shared session or per-user? | — | Decide in Phase 4 design |
+| Hosting model (self-hosted vs SaaS) | — | Decide before Phase 4 |
+| Licensing/pricing model (if productized) | — | Out of scope for MVP |
 
 ---
 
-# 29. Difficulty
+## 18. Learning Objectives
 
-**Overall:** Advanced
-
-The basic IDE is not particularly unusual.
-
-The challenging part is:
-
-```text
-             Real-time Collaboration
-                       +
-              Concurrent Editing
-                       +
-                Distributed State
-                       +
-                Code Execution
-```
-
-That combination makes the project substantially more technically interesting.
+**Frontend:** React/Next.js, Monaco, WebSocket clients, state management, real-time UI.
+**Backend:** REST APIs, WebSockets, authentication/authorization, event-driven design.
+**Distributed systems:** concurrency, CRDT/OT, event ordering, consistency, presence, reconnection, horizontal scaling.
+**Infrastructure:** Docker, Redis, reverse proxies, container isolation, process management.
+**Database:** PostgreSQL, transactions, relational modeling.
+**Security:** sandboxing, threat modeling, secure auth.
 
 ---
 
-# 30. Final Project Vision
-
-The long-term vision is:
-
-```text
-                         COLLABORATIVE IDE
-
- ┌──────────────────────────────────────────────────────────┐
- │ Files        Editor                    Collaboration     │
- │                                                          │
- │ src/         App.jsx                   🟢 Arpit          │
- │ ├ App.jsx    ─────────────────         🟢 Rahul          │
- │ ├ api.js     │ const App = () =>       🟡 Aman           │
- │ └ auth.js    │   <Dashboard />                           │
- │              └────────────────                          │
- │                                                          │
- ├──────────────────────────────────────────────────────────┤
- │ Terminal                         Chat                    │
- │ $ npm run dev                    Rahul: fixed auth      │
- │ Server running                   Arpit: checking it     │
- ├──────────────────────────────────────────────────────────┤
- │                    LIVE PREVIEW                          │
- │                    localhost                             │
- └──────────────────────────────────────────────────────────┘
-```
-
-The ultimate goal is to create a **shared development environment**, not merely a code editor with a multiplayer cursor.
-
----
-
-# 31. Project Tag
+## 19. Project Tags
 
 ```yaml
 tags:
@@ -1113,6 +602,7 @@ tags:
   - websocket
   - distributed-systems
   - crdt
+  - yjs
   - code-editor
   - docker
   - redis
