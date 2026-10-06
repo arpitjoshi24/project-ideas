@@ -592,7 +592,6 @@ The MVP succeeds when:
 **Security:** sandboxing, threat modeling, secure auth.
 
 ---
-
 ## 19. Project Tags
 
 ```yaml
