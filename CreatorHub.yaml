@@ -20,7 +20,7 @@ target_users:
   primary:
     - Solo influencers and short-form video creators
     - Small creator teams
-  initial_market: India       # optional; Hindi/Hinglish captions and local trends
+  initial_market: India      
   later:
     - Small businesses and agencies
 
@@ -119,7 +119,7 @@ mvp_phases:
       - Best-time-to-post suggestions
       - Scheduling
 
-suggested_tech_stack:        # suggestions only, not final decisions
+expected_tech_stack:       
   frontend: Next.js + Tailwind CSS
   backend: Node.js (or Next.js API routes)
   database: PostgreSQL
