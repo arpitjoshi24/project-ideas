@@ -1,0 +1,170 @@
+project:
+  name: Creator Hub            # working title, change as you like
+  tagline: Post once, publish everywhere, track everything, with AI help
+  status: idea
+  last_updated: 2026-10-13
+
+problem:
+  summary: >
+    Influencers and short-form video creators have to open many apps
+    (Instagram, YouTube, Facebook, X) to post the same video, then open them
+    all again to check views, reach and likes. Writing captions and choosing
+    songs for every platform adds more work.
+  pain_points:
+    - Posting the same video separately on every platform
+    - Checking analytics in 4+ different apps
+    - Writing a new caption and hashtags for each post
+    - Finding a song or sound that fits the video
+
+target_users:
+  primary:
+    - Solo influencers and short-form video creators
+    - Small creator teams
+  initial_market: India       # optional; Hindi/Hinglish captions and local trends
+  later:
+    - Small businesses and agencies
+
+core_features:
+  multi_platform_posting:
+    description: Upload a video once and publish to selected platforms
+    platforms: [youtube_shorts, instagram_reels, facebook, x]
+    options:
+      - Choose which platforms to post to per upload
+      - Per-platform caption and hashtags
+      - Schedule for later
+      - Auto-adjust video format (ratio, length, size) per platform
+  unified_analytics:
+    description: One dashboard with metrics from every connected account
+    metrics: [views, likes, comments, shares, reach, followers]
+    views:
+      - Per-post comparison across platforms
+      - Account-level trends over time
+      - Best time to post
+    note: Metrics differ per platform (for example "reach"), so normalize them
+  ai_caption_generator:
+    description: Generate captions and hashtags from the video
+    inputs: [video_frames, audio_transcript, short_user_description]
+    options:
+      - Multiple caption styles (funny, professional, short, long)
+      - Languages: English, Hindi, Hinglish
+      - Separate version per platform
+  song_suggestions:
+    description: Suggest songs or sounds that match the video mood
+    approach:
+      - Analyze video mood, pace and genre
+      - Suggest royalty-free tracks that can be used safely
+      - Suggest trending song names for the creator to add inside the app
+    limitation: >
+      Instagram and YouTube music libraries are not available through their
+      APIs, so copyrighted or trending audio usually has to be added inside
+      the platform app. Uploading copyrighted music can get a video muted
+      or blocked.
+
+platform_integrations:
+  youtube:
+    api: YouTube Data API
+    posting: true
+    analytics: true
+    difficulty: easy
+  instagram:
+    api: Meta Graph API
+    posting: true
+    analytics: true
+    requirements:
+      - Business or Creator account
+      - Connected to a Facebook Page
+      - Meta app review before posting for other users
+    difficulty: medium
+  facebook:
+    api: Meta Graph API
+    posting: true
+    analytics: true
+    requirements: [Facebook Page, Meta app review]
+    difficulty: medium
+  x:
+    api: X API
+    posting: true
+    analytics: true
+    note: Often paid or heavily rate-limited
+    difficulty: hard
+
+mvp_phases:
+  - phase: 1
+    name: YouTube first
+    goals:
+      - Sign up and log in
+      - Connect a YouTube account
+      - Upload a video and publish to YouTube Shorts
+      - Basic YouTube analytics
+  - phase: 2
+    name: AI captions
+    goals:
+      - Generate captions and hashtags from the video
+      - Edit and approve before posting
+  - phase: 3
+    name: Instagram and Facebook
+    goals:
+      - Connect accounts through the Meta API
+      - Publish Reels to Instagram and Facebook
+      - Start the Meta app review early, as it can take weeks
+  - phase: 4
+    name: X and song suggestions
+    goals:
+      - Add X posting
+      - Song suggestions with royalty-free music
+  - phase: 5
+    name: Unified dashboard
+    goals:
+      - Combined analytics across all platforms
+      - Best-time-to-post suggestions
+      - Scheduling
+
+suggested_tech_stack:        # suggestions only, not final decisions
+  frontend: Next.js + Tailwind CSS
+  backend: Node.js (or Next.js API routes)
+  database: PostgreSQL
+  queue_and_cache: Redis (job queue for uploads and scheduled posts)
+  file_storage: S3-compatible storage
+  video_processing: FFmpeg
+  ai:
+    captions: LLM API with video transcript and frame descriptions
+    transcription: Speech-to-text model
+  auth: OAuth 2.0 for each platform; store tokens encrypted
+
+competitors:
+  - name: Buffer
+    note: Simple, free plan with 3 channels, limited video features
+  - name: Later
+    note: Visual planning, strong for Instagram and TikTok
+  - name: Metricool
+    note: Scheduling plus analytics, free plan available
+  - name: Publer
+    note: Low-cost alternative
+  - name: SocialBee
+    note: Content categories and recycling, basic analytics
+  - name: Hootsuite
+    note: Aimed at teams and enterprises, expensive
+  - name: Sprout Social
+    note: Advanced reporting and social listening, expensive
+  - name: ShortSync
+    note: Short-form video focus, closest to this idea
+
+differentiators:
+  - Video-first workflow for short-form creators
+  - AI captions and song suggestions built into the posting flow
+  - Cheap or free plan for small creators
+  - Local language support (Hindi, Hinglish) and Indian market focus
+
+risks:
+  - Meta app review can be slow
+  - X API cost and rate limits
+  - Platforms may change API rules
+  - Copyright issues with music
+  - Strong existing competitors
+  - Securely storing user access tokens
+
+open_questions:
+  - Web app only, or mobile app too?
+  - Free vs paid plans, and what the free tier includes
+  - Add TikTok later?
+  - Which language(s) should AI captions support first?
