@@ -1,0 +1,139 @@
+project:
+  name: Streaming Studio
+  date: 2026-10-17
+  summary: >
+    OBS-style streaming platform that lets gamers and IRL streamers set up scenes,
+    go live and reach multiple platforms from one place, without the setup pain of OBS.
+
+overview:
+  problem:
+    - OBS is powerful but intimidating.
+    - Streamers juggle separate tools for overlays, alerts, chat and multistreaming.
+    - IRL streamers have no good phone-first option that survives bad mobile networks.
+  vision: >
+    One studio that handles capture, scenes, overlays, alerts, chat and restreaming.
+    A beginner can go live in minutes; an advanced streamer can still tune details.
+
+target_users:
+  recommendation: >
+    Start with IRL and beginner streamers on a browser and phone studio, then add a
+    desktop capture agent for gaming in a later phase.
+  wedges:
+    gaming_streamers:
+      main_need: Game capture, low CPU use, simple multistream
+      capture: Native desktop agent required
+      competition: [OBS, Streamlabs, Twitch Studio]
+      build_effort: Higher (native capture, encoding)
+      risk: Fighting well-known free tools
+    irl_streamers:
+      main_need: Phone-first streaming that survives weak mobile networks
+      capture: Browser or phone camera is enough
+      competition: Few good tools, mostly niche apps
+      build_effort: Lower for the MVP (WebRTC, browser)
+      risk: Smaller audience, network reliability
+
+features:
+  studio_must_have:
+    - Camera, microphone and screen capture
+    - Scenes with layers (camera, screen, images, text, browser overlays)
+    - Scene switching and audio mixer with per-source volume
+    - Go live to one destination over RTMP
+  reach_and_engagement:
+    - Multistream to Twitch, YouTube and Kick from one upload
+    - Unified chat from all platforms in one panel
+    - Alerts for follows, subs and donations
+    - Ready-made overlay templates
+  irl_mode:
+    - Phone-first streaming with auto-reconnect on weak networks
+    - Remote scene switching from a second device
+    - Battery, bitrate and connection status at a glance
+  gaming_mode:
+    - Desktop capture agent with game capture and hardware encoding
+    - Multiple audio sources (game, mic, voice chat)
+  ai_extras_later:
+    - Auto-highlight clips from the stream
+    - Auto scene switching
+    - Chat summaries for the streamer after the stream
+
+architecture:
+  approach: Hybrid. Thin clients capture video; the cloud handles ingest, restreaming and control.
+  clients:
+    - Browser studio
+    - Phone (IRL mode)
+    - Desktop agent (later)
+  cloud:
+    media_server: WebRTC and RTMP ingest
+    restreamer: FFmpeg, one stream to many outputs
+    backend_api: Scenes, chat, alerts, Postgres, Redis
+  platforms: [Twitch, YouTube, Kick]
+  flow:
+    - Clients send one stream to the media server.
+    - FFmpeg copies it to each platform.
+    - Backend supplies stream keys and scenes and holds chat and alerts.
+
+tech_stack:
+  web_studio: {choice: "Next.js, React, Canvas/WebGL", why: Scene compositing in the browser}
+  capture: {choice: "getDisplayMedia, getUserMedia", why: No install for screen and camera}
+  live_transport: {choice: WebRTC with WHIP ingest, why: Low latency from browser and phone}
+  media_server: {choice: MediaMTX or LiveKit, why: Accepts WebRTC and RTMP, ready to run}
+  restreaming: {choice: FFmpeg, why: Pushes one stream to many RTMP destinations}
+  backend: {choice: Node.js (or Go) with WebSocket, why: Scenes, alerts, chat events}
+  data: {choice: Postgres and Redis, why: Accounts and scenes; live state and queues}
+  auth_and_platforms: {choice: OAuth for Twitch, YouTube, Kick, why: Chat, stream keys and go-live}
+  desktop_agent_later: {choice: Tauri or Electron with native capture, why: Game capture and hardware encoding}
+  hosting: {choice: Docker on a cloud VM (GPU-free start), why: Simple deploy; add regions as users grow}
+
+mvp_phases:
+  - phase: 1
+    name: Browser studio
+    scope: [Camera and screen, Scenes and layers, Audio mixer, Go live over RTMP]
+    gate: Test stream goes live
+  - phase: 2
+    name: Reach
+    scope: [Multistream, Unified chat, Alerts, Overlay templates]
+    gate: Live on 3 platforms
+  - phase: 3
+    name: IRL mode
+    scope: [Phone studio, Auto-reconnect, Remote scene switch, Status dashboard]
+    gate: Stable on mobile data
+  - phase: 4
+    name: Gaming and AI
+    scope: [Desktop capture agent, Hardware encoding, Highlight clips, Auto scene switching]
+    gate: Smooth game streaming
+
+competition:
+  note: Described from general knowledge; re-check before any launch decision.
+  tools:
+    - name: OBS Studio
+      strength: Free, powerful, huge plugin ecosystem
+      gap: Steep learning curve, no built-in cloud or multistream
+    - name: Streamlabs
+      strength: OBS-based with overlays and alerts
+      gap: Heavy, paid features, still desktop-first
+    - name: StreamYard
+      strength: Easy browser studio, multistream
+      gap: Aimed at talk shows, weak for gaming and IRL
+    - name: Restream
+      strength: Multistream and chat in one place
+      gap: Not a full studio
+  where_we_win: >
+    Zero-setup onboarding, a phone-first IRL mode that holds up on bad networks,
+    and cloud multistreaming with chat, alerts and overlays in one product.
+
+risks:
+  - Scope creep. Rebuilding all of OBS is the main trap; ship one wedge first.
+  - Bandwidth cost. Cloud restreaming means paying for ingest and egress per stream.
+  - Browser limits. Browser encoding is limited and cannot capture games efficiently.
+  - Platform rules. Twitch, YouTube and Kick APIs and terms can change.
+  - Network quality. IRL streams depend on mobile connections the product does not control.
+
+open_questions:
+  - Is the first wedge IRL streamers or gaming streamers?
+  - Is this free with limits, subscription-based, or usage-priced?
+  - Should multistreaming run in the cloud from day one, or start with a single destination?
+
+next_steps:
+  - {task: Choose the wedge and the first target user, done: false}
+  - {task: Prototype a browser studio that goes live to one RTMP destination, done: false}
+  - {task: Test MediaMTX and FFmpeg restreaming on a small VM, done: false}
+  - {task: Build the first overlay and chat panel, done: false}
